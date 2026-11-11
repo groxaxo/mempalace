@@ -1044,6 +1044,37 @@
     "bootstrap_commit": "d5a5d7a704b0c2e40437bf6a003c12c6dfde6126",
     "authorization": "User explicitly requested commit, push to main, merge and documentation.",
     "deployment_authorized": false,
-    "receipt": "docs/reviews/ingestion-safeguards/PUBLICATION_RECEIPT.md"
+    "receipt": "docs/reviews/ingestion-safeguards/PUBLICATION_RECEIPT.md",
+    "source_head_commit": "31acb110f7ed85d0f431c55ecfe5b9bd26f7e7ac",
+    "initial_implementation_commit": "174dcc4b4ca24ad8f6052cdbd3f6141b67a2ec8a",
+    "merge_commit": "1c305eb1712a10cd313d3e3e8b5be63c971d8394",
+    "pull_request": 2,
+    "pull_request_url": "https://github.com/groxaxo/mempalace/pull/2",
+    "merged_at_utc": "2026-11-11T12:07:24Z",
+    "status": "merged; receipt documentation commit follows",
+    "github_ci_snapshot": {
+      "observed_at_utc": "2026-11-11T12:09:28.109109+00:00",
+      "source_head_sha": "31acb110f7ed85d0f431c55ecfe5b9bd26f7e7ac",
+      "version_guard": {
+        "run_id": 43017420590,
+        "status": "completed",
+        "conclusion": "success"
+      },
+      "tests": {
+        "run_id": 43017420640,
+        "status": "in_progress",
+        "lint": "success",
+        "linux_3_9_3_11_3_13": "all reached pytest after the runner fix",
+        "full_suite_result": "pending"
+      },
+      "docker": {
+        "run_id": 43017420592,
+        "status": "in_progress",
+        "smoke": "success",
+        "build_gpu": "success",
+        "pr_image_build": "in_progress; push is false on PR events"
+      },
+      "interpretation": "Snapshot only; no full GitHub CI pass claimed. Current run links are authoritative for later status."
+    }
   }
 }

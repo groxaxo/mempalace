@@ -3,6 +3,11 @@
 This is a **review-only publication**, not a deployment approval. Start with the
 [user-facing scope and commands](../../ingestion-safeguards.md).
 
+The corrected candidate was merged into this fork's `main` in
+[PR #2](https://github.com/groxaxo/mempalace/pull/2). The
+[publication receipt](PUBLICATION_RECEIPT.md) records the commit IDs, observed
+CI status, and remaining deployment blockers.
+
 ## Branch base and contents
 
 - Repository: `groxaxo/mempalace`; source branch:

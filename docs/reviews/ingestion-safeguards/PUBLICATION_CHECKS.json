@@ -1,6 +1,6 @@
 {
   "publication_gate": {
-    "status": "user_authorized_main_integration_pending",
+    "status": "merged_to_main_user_authorized",
     "authorization": "Explicit user request: commit, push to main, merge and document.",
     "current_patch_sha256": "19502332eb23d6cda362573fb3714e77aadc467eceef4c5624a478c976fc7a0c",
     "test_result_scope": "733 selected passes; 290 safeguards and 443 affected upstream cases. Not full-suite, new independent final-patch/Claude or deployment approval.",
@@ -9,7 +9,9 @@
       "SECOND_REVIEW.json",
       "THIRD_REVIEW.json"
     ],
-    "next_action": "Commit and push the corrected candidate, merge into fork main, and record actual remote receipt."
+    "next_action": "Observe remaining GitHub CI; production deployment remains blocked by accepted-replacement exposure and uncovered writers.",
+    "merge_commit": "1c305eb1712a10cd313d3e3e8b5be63c971d8394",
+    "pull_request_url": "https://github.com/groxaxo/mempalace/pull/2"
   },
   "scope": "Review-branch publication only; not production or full-suite approval. Workspace prefixes are redacted. Commands ran in the publication tree using the isolated original snapshot Python environment.",
   "release_base_commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
@@ -274,5 +276,35 @@
     "error": "The version '3.9' with architecture 'x64' was not found for Ubuntu 26.04.",
     "correction": "Only Python 3.9 now runs on ubuntu-24.04; other entries remain on ubuntu-latest.",
     "application_source_changed": false
+  },
+  "github_ci_snapshot": {
+    "observed_at_utc": "2026-11-11T12:09:28.109109+00:00",
+    "source_head_sha": "31acb110f7ed85d0f431c55ecfe5b9bd26f7e7ac",
+    "version_guard": {
+      "run_id": 43017420590,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "tests": {
+      "run_id": 43017420640,
+      "status": "in_progress",
+      "lint": "success",
+      "linux_3_9_3_11_3_13": "all reached pytest after the runner fix",
+      "full_suite_result": "pending"
+    },
+    "docker": {
+      "run_id": 43017420592,
+      "status": "in_progress",
+      "smoke": "success",
+      "build_gpu": "success",
+      "pr_image_build": "in_progress; push is false on PR events"
+    },
+    "interpretation": "Snapshot only; no full GitHub CI pass claimed. Current run links are authoritative for later status."
+  },
+  "merged_tree_verification": {
+    "merge_commit": "1c305eb1712a10cd313d3e3e8b5be63c971d8394",
+    "source_head": "31acb110f7ed85d0f431c55ecfe5b9bd26f7e7ac",
+    "same_git_tree": true,
+    "frozen_source_fingerprints_matched": 21
   }
 }
