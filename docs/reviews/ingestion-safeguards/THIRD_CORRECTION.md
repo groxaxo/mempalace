@@ -52,6 +52,12 @@ from publishing Docker images. The source branch is
 branch are retained. No tag, package release, production deployment, service
 change, or real-data ingestion is part of this publication.
 
+The first PR CI attempt passed lint and version checks but could not install
+Python 3.9 on `ubuntu-latest` (Ubuntu 26.04), cancelling the other Linux matrix
+entries. The Python 3.9 entry now uses Ubuntu 24.04; other versions retain
+`ubuntu-latest`. This fixes runner compatibility without changing application
+code or reducing the test matrix.
+
 The final commit/PR/merge identifiers and observed CI status are recorded in
 `PUBLICATION_RECEIPT.md` after the remote operation succeeds.
 

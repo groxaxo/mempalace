@@ -2,7 +2,7 @@
   "publication_gate": {
     "status": "user_authorized_main_integration_pending",
     "authorization": "Explicit user request: commit, push to main, merge and document.",
-    "current_patch_sha256": "a1709af18080e4d27b79df575e5c02d888cbb3c82433a7de6f26d70895bf2c67",
+    "current_patch_sha256": "19502332eb23d6cda362573fb3714e77aadc467eceef4c5624a478c976fc7a0c",
     "test_result_scope": "733 selected passes; 290 safeguards and 443 affected upstream cases. Not full-suite, new independent final-patch/Claude or deployment approval.",
     "prior_failed_reviews_are_historical": [
       "INITIAL_REVIEW.json",
@@ -266,5 +266,13 @@
       "exit_code": 0,
       "output": "{\n  \"decision_counts\": {\n    \"archive-only\": 1,\n    \"keep\": 1,\n    \"sanitize\": 3,\n    \"unsupported\": 1\n  },\n  \"files\": [\n    {\n      \"conversations\": 1,\n      \"decision\": \"keep\",\n      \"input_bytes\": 60,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"plain_or_structured_text\": 1\n      },\n      \"selected_bytes\": 60,\n      \"sha256\": \"5bca7d7b85390e56aa7603280e5312766f0fda8c486bf2f8bf01866f20cd0bc1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/facts.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 315,\n      \"input_lines\": 4,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"c2cd9b6ac02d58c3b18a7657ecd0e5cda351057807aafa121a3d14545ddd8ef1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/canonical.jsonl\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"archive-only\",\n      \"input_bytes\": 113,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"unparsed_codex\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"ecea9ad0436ca3a337d4ea6968f32a9ce128fc3ebbcb3ac018e4a58dbd706c26\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/headerless.jsonl\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 366,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"a51dd0a7cadea0bead6e1932dc3e7ab622adeac63ca9a44ed592f1bdb37f3130\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/encoded.json\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"unsupported\",\n      \"input_bytes\": 465,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"encoding_depth\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"e10d0af470e6777f97ec0c5b3faeae9d324a50b81f1b461afa53e354e7a81cb3\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/excess-encoding.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 4132,\n      \"input_lines\": 2,\n      \"omission_counts\": {\n        \"opaque_line\": 1\n      },\n      \"reason_counts\": {\n        \"opaque_line\": 1\n      },\n      \"selected_bytes\": 35,\n      \"sha256\": \"fe361fa6753efac49363d7915207705d54fcc538d87868498b1988f388949a51\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/command-output.txt\"\n    }\n  ],\n  \"mode\": \"shadow\",\n  \"policy_version\": 1\n}\n"
     }
+  },
+  "ci_runner_compatibility": {
+    "first_pr_run_id": 43016893606,
+    "job_id": 130510095859,
+    "failure_stage": "actions/setup-python; tests did not run",
+    "error": "The version '3.9' with architecture 'x64' was not found for Ubuntu 26.04.",
+    "correction": "Only Python 3.9 now runs on ubuntu-24.04; other entries remain on ubuntu-latest.",
+    "application_source_changed": false
   }
 }

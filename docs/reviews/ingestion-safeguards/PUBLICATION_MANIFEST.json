@@ -724,9 +724,10 @@
     }
   ],
   "current_review_patch": {
-    "patch_sha256": "a1709af18080e4d27b79df575e5c02d888cbb3c82433a7de6f26d70895bf2c67",
-    "patch_bytes": 159552,
+    "patch_sha256": "19502332eb23d6cda362573fb3714e77aadc467eceef4c5624a478c976fc7a0c",
+    "patch_bytes": 160025,
     "source_sha256": {
+      ".github/workflows/ci.yml": "92182db3ba3f458deb9866f5c257ae40552182e49b6b68fd95bc8679462b261f",
       ".github/workflows/docker-publish.yml": "e4a19098ad123c395a706902b41c9790ec2f372717aab08bf57f9ab00cfdd3e0",
       "mempalace/convo_miner.py": "8cf66d212e2cceab3abb49652af260c2287970c91674e065b92abfb4492ac8e0",
       "mempalace/ingestion.py": "7bf54e34a966df15d8c37603b1a0c13ddb66fdb87add10b0f47c02b632ce9ae5",
@@ -749,8 +750,9 @@
       "tests/test_normalize.py": "dbc1f5822b77dd2142355dc7629a7bd5423322e981c25892148b2842135cc31e"
     },
     "published_patch_path": "docs/reviews/ingestion-safeguards/review-third-fixes/FROZEN_SOURCE.patch",
-    "freeze_method": "Release-base HEAD-to-working-tree source/tests/scripts/CI diff plus both explicit untracked regression files; Git index unchanged during freeze",
-    "status": "Corrected R1-R5 candidate; user authorized committing, pushing and merging into fork main. No new independent final-patch or Claude approval claimed."
+    "freeze_method": "Explicit v3.11.0 release-base to corrected working-tree source/tests/scripts/CI diff, including runner compatibility; all regression files tracked",
+    "status": "Corrected R1-R5 candidate; user authorized committing, pushing and merging into fork main. No new independent final-patch or Claude approval claimed.",
+    "previous_corrected_patch_sha256": "a1709af18080e4d27b79df575e5c02d888cbb3c82433a7de6f26d70895bf2c67"
   },
   "review_status": "User authorized main integration after the third correction. R1-R5 and additional candidate-review edge cases have regressions; selected checks are documented separately. Prior failed reviews and fingerprints are historical. Deployment remains blocked by accepted-replacement exposure and uncovered writers; requested Claude review was not run.",
   "historical_first_correction_patch": {

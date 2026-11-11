@@ -13,7 +13,7 @@ publication preparation. Private workspace/interpreter prefixes are redacted as
 - `FROZEN_SOURCE.patch`: exact corrected source/tests/scripts/CI diff relative
   to the v3.11.0 release base, including both formerly untracked regression files.
 
-The publication manifest records the freeze digest and all 20 source fingerprints.
+The publication manifest records the freeze digest and all 21 source fingerprints.
 The old rejected freeze and verdict remain historical. These checks are selected
 local validation, not a full upstream or independent final-patch/Claude approval.
 See [the correction record](../THIRD_CORRECTION.md) for scope and remaining
