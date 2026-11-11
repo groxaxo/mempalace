@@ -56,6 +56,9 @@ jobs:
         run: ./scripts/docker-smoke.sh mempalace:smoke
 
   build:
+    # Fork main branches may publish review changes without releasing images.
+    # Keep PR builds available; only the upstream repository can publish.
+    if: github.repository == 'MemPalace/mempalace' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # Never publish an image the smoke test has not cleared.
     needs: smoke
