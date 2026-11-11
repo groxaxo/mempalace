@@ -1,0 +1,70 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_writers.py
+.....FFF                                                                 [100%]
+=================================== FAILURES ===================================
+__________ test_live_and_manual_drawers_cannot_bypass_admission[live] __________
+
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7abd76bca600>, <test_writers.StorageSpy object ...ll_output", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_SENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}'])
+writer = 'live'
+
+    @pytest.mark.parametrize("writer", ["live", "manual"])
+    def test_live_and_manual_drawers_cannot_bypass_admission(writer_spies, writer):
+        collection, storage, embedded = writer_spies
+        if writer == "live":
+            result = convo_miner.file_conversation_exchange(
+                collection, wing="synthetic", room="conversations", text=codex_fragments(),
+                source_file="synthetic.jsonl", agent="test")
+        else:
+            result = miner.add_drawer(collection, "synthetic", "general", codex_fragments(),
+                                      "synthetic.jsonl", 0, "test")
+>       assert not result
+E       AssertionError: assert not 'drawer_synthetic_conversations_9d6bd4dcda32af1532cece60'
+
+tests/test_writers.py:127: AssertionError
+_________ test_live_and_manual_drawers_cannot_bypass_admission[manual] _________
+
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7abd76bdf920>, <test_writers.StorageSpy object ...ll_output", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_SENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}'])
+writer = 'manual'
+
+    @pytest.mark.parametrize("writer", ["live", "manual"])
+    def test_live_and_manual_drawers_cannot_bypass_admission(writer_spies, writer):
+        collection, storage, embedded = writer_spies
+        if writer == "live":
+            result = convo_miner.file_conversation_exchange(
+                collection, wing="synthetic", room="conversations", text=codex_fragments(),
+                source_file="synthetic.jsonl", agent="test")
+        else:
+            result = miner.add_drawer(collection, "synthetic", "general", codex_fragments(),
+                                      "synthetic.jsonl", 0, "test")
+>       assert not result
+E       assert not True
+
+tests/test_writers.py:127: AssertionError
+________ test_live_exchange_retains_facts_source_and_omission_metadata _________
+
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7abd76bdfc20>, <test_writers.StorageSpy object ...bc0>, ['{"error": "exit 2: missing header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL", "bytes": [77, 88]}}'])
+
+    def test_live_exchange_retains_facts_source_and_omission_metadata(writer_spies):
+        import json
+    
+        collection, storage, embedded = writer_spies
+        result = convo_miner.file_conversation_exchange(
+            collection, wing="synthetic", room="conversations", text=json.dumps({
+                "error": "exit 2: missing header", "rawOutput": {"base64": OPAQUE, "bytes": [77, 88]}}),
+            source_file="synthetic.jsonl", agent="test",
+            extra_metadata={"ingestion_decision": "keep", "source_file": "wrong"})
+>       assert result and "missing header" in "\n".join(embedded) and OPAQUE not in "\n".join(embedded)
+E       assert ('drawer_synthetic_conversations_c45e9b59a717d9e0d387004a' and 'missing header' in '{"error": "exit 2: missing header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL", "bytes": [77, 88]}}' and 'FORBIDDEN_OPAQUE_SENTINEL' not in '{"error": "...: [77, 88]}}'
+E        +  where '{"error": "exit 2: missing header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL", "bytes": [77, 88]}}' = <built-in method join of str object at 0x1377078>(['{"error": "exit 2: missing header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL", "bytes": [77, 88]}}'])
+E        +    where <built-in method join of str object at 0x1377078> = '\n'.join
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           base64": "FORBIDDEN_OPAQUE_SENTINEL", "bytes": [77, 88]}})
+
+tests/test_writers.py:140: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_writers.py::test_live_and_manual_drawers_cannot_bypass_admission[live]
+FAILED tests/test_writers.py::test_live_and_manual_drawers_cannot_bypass_admission[manual]
+FAILED tests/test_writers.py::test_live_exchange_retains_facts_source_and_omission_metadata
+3 failed, 5 passed in 0.84s
+
+EXIT STATUS: 1

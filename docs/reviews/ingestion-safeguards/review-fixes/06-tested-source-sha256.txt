@@ -1,0 +1,9 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 sha256sum mempalace/ingestion.py mempalace/normalize.py tests/ingestion_safeguards/test_ingestion.py tests/ingestion_safeguards/test_review_fixes.py
+
+a672b960f1f70b8539a477cad40153ab8849f91b4612ab3ce22500ca9d858842  mempalace/ingestion.py
+c714601472f7355e97f148527d16510ad511066d48c7097ba961e34aac22e930  mempalace/normalize.py
+ea09870cc5a76808e14ecf1ad636b2fcef015c8424bfa08ec24af168c5c0fc64  tests/ingestion_safeguards/test_ingestion.py
+044d21ac05a1187c52c0fb399628d3a7223f58b9cea5a1bd3b43b064413e2f38  tests/ingestion_safeguards/test_review_fixes.py
+
+EXIT STATUS: 0

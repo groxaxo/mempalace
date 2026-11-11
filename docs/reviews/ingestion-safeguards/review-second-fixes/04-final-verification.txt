@@ -1,0 +1,11 @@
+cwd: <publication>
+$ env TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 <snapshot>/.venv/bin/python test-tmp/review-second-fixes/verify_final.py
+
+Traceback (most recent call last):
+  File "<publication>/test-tmp/review-second-fixes/verify_final.py", line 36, in <module>
+    assert changed == ["mempalace/ingestion.py"], changed
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ['docs/reviews/ingestion-safeguards/PUBLICATION_CHECKS.json', 'mempalace/ingestion.py']
+
+exit_status: 1
+elapsed_seconds: 0.264762

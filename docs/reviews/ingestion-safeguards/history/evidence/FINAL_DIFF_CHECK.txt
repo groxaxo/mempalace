@@ -1,0 +1,3 @@
+TMPDIR=<snapshot>/test-tmp git diff --check
+
+EXIT STATUS: 0

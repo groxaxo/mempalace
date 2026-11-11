@@ -1,0 +1,5 @@
+TMPDIR=<snapshot>/test-tmp git apply --check --reverse --whitespace=error-all evidence/IMPLEMENTATION.patch
+error: patch failed: FINAL_REPORT.md:1
+error: FINAL_REPORT.md: patch does not apply
+
+EXIT STATUS: 1

@@ -1,0 +1,5 @@
+{
+  "command": "<isolated-python> -m compileall -q mempalace tests/ingestion_safeguards scripts/record_check.py scripts/shadow_demo.py",
+  "exit_code": 0,
+  "output": ""
+}

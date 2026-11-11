@@ -1,0 +1,46 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+................FFF.                                                     [100%]
+=================================== FAILURES ===================================
+___________ test_json_encoded_supported_transcript_is_unwrapped_once ___________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-4/test_json_encoded_supported_tr0')
+
+    def test_json_encoded_supported_transcript_is_unwrapped_once(tmp_path):
+        source = tmp_path / "encoded.txt"
+        source.write_text(json.dumps(canonical_codex()))
+        result = normalize_conversations(str(source))
+>       assert "東京 uses JST" in result[0] and "JST is UTC+9" in result[0]
+E       assert ('東京 uses JST' in '"{\\"type\\": \\"session_meta\\", \\"payload\\": {\\"id\\": \\"synthetic\\"}}\\n\\n \\t\\n{\\"type\\": \\"event_msg\\...wOutput\\\\\\": {\\\\\\"base64\\\\\\": \\\\\\"FORBIDDEN_OPAQUE_SENTINEL\\\\\\", \\\\\\"bytes\\\\\\": [1, 2, 3]}}\\"}}"')
+
+tests/test_ingestion.py:78: AssertionError
+________________ test_json_encoded_fragments_still_fail_closed _________________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-4/test_json_encoded_fragments_st0')
+
+    def test_json_encoded_fragments_still_fail_closed(tmp_path):
+        source = tmp_path / "encoded.json"
+        source.write_text(json.dumps(codex_fragments()))
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:85: Failed
+________________ test_excess_encoding_is_explicitly_unsupported ________________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-4/test_excess_encoding_is_explic0')
+
+    def test_excess_encoding_is_explicitly_unsupported(tmp_path):
+        source = tmp_path / "too-encoded.json"
+        source.write_text(json.dumps(json.dumps(canonical_codex())))
+>       with pytest.raises(ValueError, match="encoding_depth"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_ingestion.py:92: Failed
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_json_encoded_supported_transcript_is_unwrapped_once
+FAILED tests/test_ingestion.py::test_json_encoded_fragments_still_fail_closed
+FAILED tests/test_ingestion.py::test_excess_encoding_is_explicitly_unsupported
+3 failed, 17 passed in 0.07s
+
+EXIT STATUS: 1

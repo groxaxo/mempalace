@@ -1,0 +1,122 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+...........................................FFFFF                         [100%]
+=================================== FAILURES ===================================
+________ test_more_than_one_extra_encoding_layer_cannot_return_as_prose ________
+
+    def test_more_than_one_extra_encoding_layer_cannot_return_as_prose():
+        from mempalace.ingestion import admit_text
+    
+        content = canonical_codex()
+        for _ in range(4):
+            content = json.dumps(content)
+        result = admit_text(content)
+>       assert result.decision == "unsupported" and "encoding_depth" in result.reasons
+E       AssertionError: assert ('keep' == 'unsupported'
+E         
+E         - unsupported
+E         + keep)
+
+tests/test_ingestion.py:276: AssertionError
+_______ test_malformed_typed_transport_does_not_fall_back_to_tool_prose ________
+
+    def test_malformed_typed_transport_does_not_fall_back_to_tool_prose():
+        from mempalace.normalize import _format_tool_result
+    
+        content = '{"rawOutput":{"base64":"' + OPAQUE
+>       assert _format_tool_result(content, "Unknown") == ""
+E       assert '→ {"rawOutpu...AQUE_SENTINEL' == ''
+E         
+E         + → {"rawOutput":{"base64":"FORBIDDEN_OPAQUE_SENTINEL
+
+tests/test_ingestion.py:283: AssertionError
+________ test_continue_tool_messages_get_the_same_selection_and_limits _________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-27/test_continue_tool_messages_ge0')
+
+    def test_continue_tool_messages_get_the_same_selection_and_limits(tmp_path):
+        source = tmp_path / "continue.json"
+        source.write_text(json.dumps({"history": [
+            {"role": "user", "content": "Why did it fail?"},
+            {"role": "assistant", "content": "The build failed."},
+            {"role": "tool", "content": json.dumps({"stderr": "ERROR: missing dependency", "rawOutput": {"base64": OPAQUE}})},
+        ]}))
+        result = normalize_conversations(str(source))[0]
+>       assert "missing dependency" in result and OPAQUE not in result
+E       assert ('missing dependency' in '> Why did it fail?\nThe build failed.\n[tool] {"stderr": "ERROR: missing dependency", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}\n' and 'FORBIDDEN_OPAQUE_SENTINEL' not in '> Why did i...ENTINEL"}}\n'
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           base64": "FORBIDDEN_OPAQUE_SENTINEL"}})
+
+tests/test_ingestion.py:294: AssertionError
+___________ test_structure_limits_have_an_explicit_resource_outcome ____________
+
+    def test_structure_limits_have_an_explicit_resource_outcome():
+        from mempalace.ingestion import admit_text
+    
+        result = admit_text('[' * 2000 + '0' + ']' * 2000)
+>       assert result.decision == "unsupported"
+E       AssertionError: assert 'archive-only' == 'unsupported'
+E         
+E         - unsupported
+E         + archive-only
+
+tests/test_ingestion.py:301: AssertionError
+_______ test_wrong_tool_identifier_type_is_reported_instead_of_crashing ________
+
+    def test_wrong_tool_identifier_type_is_reported_instead_of_crashing():
+        from mempalace.ingestion import admit_text
+    
+>       result = admit_text(json.dumps({"type": "assistant", "message": {"content": [
+            {"type": "tool_use", "id": ["invalid"], "input": {}}]}}))
+
+tests/test_ingestion.py:308: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+mempalace/ingestion.py:375: in admit_text
+    split = _try_normalize_json_split(content)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mempalace/normalize.py:239: in _try_normalize_json_split
+    normalized = _try_claude_code_jsonl(content)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+content = '{"type": "assistant", "message": {"content": [{"type": "tool_use", "id": ["invalid"], "input": {}}]}}'
+
+    def _try_claude_code_jsonl(content: str) -> Optional[str]:
+        """Claude Code JSONL sessions."""
+        lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
+        messages = []
+        tool_use_map = {}  # tool_use_id → tool_name
+    
+        for line in lines:
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(entry, dict):
+                continue
+            msg_type = entry.get("type", "")
+            message = entry.get("message", {})
+            if not isinstance(message, dict):
+                continue
+            msg_content = message.get("content", "")
+    
+            # Build tool_use_map from assistant messages
+            if msg_type == "assistant" and isinstance(msg_content, list):
+                for block in msg_content:
+                    if isinstance(block, dict) and block.get("type") == "tool_use":
+                        tool_id = block.get("id", "")
+                        if tool_id:
+>                           tool_use_map[tool_id] = block.get("name", "Unknown")
+                            ^^^^^^^^^^^^^^^^^^^^^
+E                           TypeError: unhashable type: 'list'
+
+mempalace/normalize.py:318: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_more_than_one_extra_encoding_layer_cannot_return_as_prose
+FAILED tests/test_ingestion.py::test_malformed_typed_transport_does_not_fall_back_to_tool_prose
+FAILED tests/test_ingestion.py::test_continue_tool_messages_get_the_same_selection_and_limits
+FAILED tests/test_ingestion.py::test_structure_limits_have_an_explicit_resource_outcome
+FAILED tests/test_ingestion.py::test_wrong_tool_identifier_type_is_reported_instead_of_crashing
+5 failed, 43 passed in 0.26s
+
+EXIT STATUS: 1

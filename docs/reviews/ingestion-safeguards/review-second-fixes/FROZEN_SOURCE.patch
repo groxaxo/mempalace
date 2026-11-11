@@ -1,0 +1,3387 @@
+diff --git a/mempalace/convo_miner.py b/mempalace/convo_miner.py
+index ba23f63e..5a585226 100644
+--- a/mempalace/convo_miner.py
++++ b/mempalace/convo_miner.py
+@@ -28,7 +28,8 @@ from .ids import (
+     make_convo_sentinel_id,
+     make_exchange_drawer_id,
+ )
+-from .normalize import UnparsedCodexTranscriptError, normalize_conversations
++from .normalize import _read_transcript_file
++from .ingestion import NonIndexableContentError, admit_text, indexing_text
+ from .source_identity import identity_metadata, source_directory_identity
+ from .entities import entities_metadata
+ from .palace import (
+@@ -111,9 +112,11 @@ def file_conversation_exchange(
+     """
+     from .config import sanitize_name
+ 
+-    text = (text or "").strip()
+-    if not text:
++    admission = admit_text(text or "", source=source_file)
++    if not admission.indexable:
++        logger.warning("Skipping %s: %s", source_file, ",".join(admission.reasons))
+         return None
++    text = indexing_text(admission.text)
+     try:
+         wing = sanitize_name(wing, "wing")
+     except ValueError:
+@@ -151,6 +154,7 @@ def file_conversation_exchange(
+         # Same directory identity a mined drawer carries, so ``sync`` decides
+         # a live exchange and a historical one by the same rule (#2320).
+         **identity_metadata(source_file),
++        **admission.metadata(),
+     }
+     if extra_metadata:
+         for key, value in extra_metadata.items():
+@@ -690,6 +694,7 @@ def _file_chunks_locked(
+     authored_at=None,
+     content_hash=None,
+     source_dir_ino=None,
++    admission_metadata=None,
+ ):
+     """Lock the source file, purge stale drawers, and upsert fresh chunks.
+ 
+@@ -703,10 +708,38 @@ def _file_chunks_locked(
+ 
+     Returns (drawers_added, room_counts_delta, skipped). ``skipped`` is
+     :data:`PURGE_FAILED` when the stale-drawer purge raised, which the mine
+-    counts as an error rather than a skip.
++    counts as an error rather than a skip. Admission refusals return
++    ``admission_rejected`` before acquiring the lock or deleting anything.
++    ``admission_metadata`` is source-level context supplied by the miner
++    after admission and before chunking, not a storage-layer security gate.
+     """
+     room_counts_delta: dict = defaultdict(int)
+     drawers_added = 0
++    admitted_chunks = []
++    for chunk in chunks:
++        if admission_metadata is not None:
++            # The source was classified before chunking. Re-parsing a chunk
++            # would discard its code-fence/prose context and misclassify a
++            # literal format example as a new raw transcript.
++            valid = admission_metadata.get("ingestion_policy") == 1 and admission_metadata.get(
++                "ingestion_decision"
++            ) in ("keep", "sanitize")
++            text = indexing_text(chunk["content"])
++            metadata = admission_metadata
++        else:
++            admission = admit_text(chunk["content"], source=source_file)
++            valid, text, metadata = (
++                admission.indexable,
++                indexing_text(admission.text),
++                admission.metadata(),
++            )
++        if not valid or not text:
++            logger.warning("Skipping %s: admission_rejected", source_file)
++            return 0, room_counts_delta, "admission_rejected"
++        admitted_chunks.append({**chunk, "content": text, "admission_metadata": metadata})
++    if not admitted_chunks:
++        return 0, room_counts_delta, "admission_rejected"
++    chunks = admitted_chunks
+     with mine_lock(source_file):
+         # Re-check after lock — another agent may have just finished this file
+         # at the current schema/mtime. A stale hit here returns False, so we
+@@ -791,6 +824,7 @@ def _file_chunks_locked(
+                     }
+                     if extract_mode == "exchange":
+                         meta["convo_chunker_version"] = CONVO_CHUNKER_VERSION
++                    meta.update(chunk["admission_metadata"])
+                     if source_mtime is not None:
+                         meta["source_mtime"] = source_mtime
+                     if source_dir_ino:
+@@ -1020,11 +1054,12 @@ def _normalize_convo_conversations(
+     agent: str,
+     extract_mode: str,
+     dry_run: bool,
++    admission_metadata: Optional[dict] = None,
+ ) -> Optional[list]:
+-    """Normalize a transcript file into its individual conversations,
+-    registering it as filed when there's nothing worth mining. Returns None
++    """Admit a source and normalize it into individual conversations. Returns None
+     when the caller should skip the file (normalize failed, or the normalized
+-    content is only whitespace). A short transcript is still mined: the
++    content is only whitespace), without recording a successful refresh.
++    A short transcript is still mined: the
+     chunker keeps text below the min chunk size rather than dropping it.
+ 
+     Kept as separate conversations rather than joined into one string so
+@@ -1034,18 +1069,19 @@ def _normalize_convo_conversations(
+     whole-file hash and hides the conversations that didn't change.
+     """
+     try:
+-        conversations = [c for c in normalize_conversations(str(filepath)) if c]
+-    except UnparsedCodexTranscriptError as exc:
++        admission = admit_text(_read_transcript_file(str(filepath)), source=source_file)
++        conversations = [
++            indexing_text(c) for c in admission.require_conversations() if indexing_text(c)
++        ]
++        if admission_metadata is not None:
++            admission_metadata.update(admission.metadata())
++    except NonIndexableContentError as exc:
+         logger.warning("Skipping %s: %s; source remains eligible for retry", filepath, exc)
+         return None
+     except (OSError, ValueError):
+-        if not dry_run:
+-            _register_file(collection, source_file, wing, agent, extract_mode)
+         return None
+ 
+     if not any(c.strip() for c in conversations):
+-        if not dry_run:
+-            _register_file(collection, source_file, wing, agent, extract_mode)
+         return None
+ 
+     return conversations
+@@ -1194,6 +1230,7 @@ def _mine_convos_impl(
+             files_skipped += 1
+             continue
+ 
++        admission_metadata = {}
+         conversations = _normalize_convo_conversations(
+             filepath,
+             source_file,
+@@ -1202,6 +1239,7 @@ def _mine_convos_impl(
+             agent,
+             extract_mode,
+             dry_run,
++            admission_metadata,
+         )
+         if conversations is None:
+             continue
+@@ -1291,6 +1329,7 @@ def _mine_convos_impl(
+             authored_at=_extract_authored_at(filepath),
+             content_hash=content_hash,
+             source_dir_ino=source_directory_identity(filepath),
++            admission_metadata=admission_metadata,
+         )
+         if skipped == PURGE_FAILED:
+             files_failed.append(source_file)
+diff --git a/mempalace/ingestion.py b/mempalace/ingestion.py
+new file mode 100644
+index 00000000..124618e4
+--- /dev/null
++++ b/mempalace/ingestion.py
+@@ -0,0 +1,676 @@
++"""Deterministic ingestion admission helpers. No storage, models, or network."""
++
++import ast
++import json
++import re
++from contextlib import contextmanager
++from contextvars import ContextVar
++from dataclasses import dataclass
++
++
++_omissions = ContextVar("ingestion_omissions", default=None)
++_spellcheck = ContextVar("ingestion_spellcheck", default=True)
++
++
++def spellcheck_enabled() -> bool:
++    return _spellcheck.get()
++
++
++def note_omission(reason: str, count: int = 1) -> None:
++    """Record fixed reason codes/counts, never raw keys or payload values."""
++    report = _omissions.get()
++    if report is not None:
++        report[reason] = report.get(reason, 0) + count
++
++
++@contextmanager
++def omission_report():
++    """Share metadata through formatting; annotations are rendered only at exits."""
++    report = _omissions.get()
++    standalone = report is None
++    token = _omissions.set({}) if standalone else None
++    try:
++        yield _omissions.get(), standalone
++    finally:
++        if token is not None:
++            _omissions.reset(token)
++
++
++def annotate_omissions(text: str, omissions: dict, *, tool: bool = False) -> str:
++    """Legacy display output only. Admission and writers use selected text.
++
++    Render after joins and byte cuts so annotations cannot be split into
++    indexable fragments. Never infer provenance from a source string's syntax.
++    """
++    if not text.strip() or not omissions:
++        return text
++
++    def suffix():
++        return (" " if "\n" not in text else "\n") + "\n".join(
++            f"[ingestion omitted: {reason}"
++            + ("" if reason in ("tool_line_bytes", "tool_total_bytes") else f"; count={count}")
++            + "]"
++            for reason, count in sorted(omissions.items())
++        )
++
++    annotation = suffix()
++    if tool:
++        limit = TOOL_TOTAL_BYTES if "\n" in text else TOOL_LINE_BYTES
++        if len((text + annotation).encode("utf-8", errors="replace")) > limit:
++            omissions = dict(omissions)
++            reason = "tool_total_bytes" if "\n" in text else "tool_line_bytes"
++            omissions.setdefault(reason, 1)
++            annotation = suffix()
++            text = _utf8_ends(
++                text, limit - len(annotation.encode("utf-8")), "\n" if "\n" in text else " "
++            )
++    return text + annotation
++
++
++_OPAQUE_TYPES = {
++    "reasoning",
++    "thinking",
++    "redacted_thinking",
++    "image",
++    "image_url",
++    "input_image",
++    "output_image",
++    "audio",
++    "input_audio",
++    "output_audio",
++}
++_BUFFER_KEYS = {"base64", "bytes", "buffer", "data", "b64_json", "encrypted_content"}
++_TRANSPORT_FIELDS = {
++    "rawOutput",
++    "raw_buffer",
++    "rawBuffer",
++    "inlineData",
++    "inline_data",
++    "image",
++    "audio",
++    "video",
++    "image_url",
++    "input_audio",
++}
++_TRANSPORT_METADATA = {"type", "encoding", "format", "mime_type", "mimeType", "size", "length"}
++MAX_TOOL_INPUT_BYTES = 256 * 1024
++TOOL_LINE_BYTES = 512
++TOOL_TOTAL_BYTES = 2048
++_OPAQUE_LINE = re.compile(r"[A-Za-z0-9+/]{2048,}={0,2}\Z")
++_TRANSPORT_PREFIX = re.compile(
++    r'"(?:rawOutput|raw_buffer|rawBuffer|inlineData|inline_data)"\s*:'
++    r'|"type"\s*:\s*"(?:reasoning|thinking|Buffer|input_audio|input_image)"'
++)
++# Quote/comment starts consume one whole lexeme, including an incomplete EOF
++# tail. Disjoint body alternatives and an EOF match prevent suffix retries
++# when closing delimiters are missing, in both tokenization consumers.
++_LITERAL_TOKENS = re.compile(
++    r'"(?:[^"\\]|\\.)*(?:"|\\?\Z)|\'(?:[^\'\\]|\\.)*(?:\'|\\?\Z)'
++    r"|//[^\r\n]*|/\*(?:[^*]|\*(?!/))*(?:\*/|\Z)|\#[^\r\n]*|\s+|[A-Za-z_][A-Za-z_0-9]*|\d+|.",
++    re.DOTALL,
++)
++_RAW_OPAQUE_PREFIX = re.compile(
++    r'"(?:rawOutput|raw_buffer|rawBuffer|inlineData|inline_data)"\s*:\s*"([A-Za-z0-9+/]{2048,})'
++)
++
++
++def _complete_source_literal(text: str) -> bool:
++    """Recognize complete JS/Python literal syntax without executing source.
++
++    Comments, trailing commas, and a statement terminator are accepted only
++    for this recognition probe. The admitted source is never rewritten.
++    """
++    # Let Python recognize its own string delimiters/prefixes before the JS
++    # compatibility probe can mistake quoted comment characters for syntax.
++    try:
++        return isinstance(ast.literal_eval(text), (dict, list))
++    except (ValueError, SyntaxError, RecursionError):
++        pass
++    parts, following = [], ""
++    for token in reversed(_LITERAL_TOKENS.findall(text)):
++        if token.startswith("/*") and (len(token) < 4 or not token.endswith("*/")):
++            return False
++        if token.startswith(("//", "/*", "#")):
++            parts.append(" ")
++        elif token.isspace():
++            parts.append(token)
++        elif (token == ";" and not following) or (token == "," and following in ("}", "]")):
++            continue
++        elif token.isidentifier():
++            # Probe JS keys/constants as Python literals; quoted source
++            # strings are whole tokens and never undergo this conversion.
++            parts.append(
++                json.dumps(token)
++                if following == ":"
++                else {"true": "True", "false": "False", "null": "None"}.get(token, token)
++            )
++            following = token
++        else:
++            parts.append(token)
++            following = token
++    candidate = "".join(reversed(parts)).strip()
++    for parser in (json.loads, ast.literal_eval):
++        try:
++            value = parser(candidate)
++        except (ValueError, SyntaxError, RecursionError):
++            continue
++        return isinstance(value, (dict, list))
++    return False
++
++
++def _malformed_transport(text: str, *, tool_context: bool) -> bool:
++    """Require typed payload structure, or an explicitly typed tool context."""
++    prefix = text[:8192]
++    evidence = tool_context and bool(_TRANSPORT_PREFIX.search(prefix))
++    match = _RAW_OPAQUE_PREFIX.search(prefix)
++    evidence = evidence or bool(match and _opaque_span(match[1]))
++    tokens = [
++        token
++        for token in _LITERAL_TOKENS.findall(prefix)
++        if not token.isspace() and not token.startswith(("//", "/*", "#"))
++    ]
++    strings = []
++    for token in tokens:
++        try:
++            strings.append(json.loads(token) if token.startswith('"') else None)
++        except ValueError:
++            strings.append(None)
++    frames = []
++    for index, token in enumerate(tokens):
++        key = strings[index - 2] if index >= 2 and tokens[index - 1] == ":" else None
++        if token in ("{", "["):
++            frames.append(({} if token == "{" else None, key in _TRANSPORT_FIELDS))
++        elif token in ("}", "]"):
++            if frames:
++                frames.pop()
++        elif frames and frames[-1][0] is not None and index + 2 < len(tokens):
++            if tokens[index + 1] != ":" or not isinstance(strings[index], str):
++                continue
++            fields, transport = frames[-1]
++            fields[strings[index]] = strings[index + 2]
++            typed_buffer = (
++                transport
++                or fields.get("type") in ("Buffer", "buffer")
++                or fields.get("encoding") == "base64"
++            )
++            if _typed_payload(fields) or (typed_buffer and fields.keys() & _BUFFER_KEYS):
++                evidence = True
++            if (
++                strings[index] in _TRANSPORT_FIELDS
++                and tokens[index + 2] == "["
++                and index + 3 < len(tokens)
++            ):
++                evidence = evidence or tokens[index + 3].isdigit()
++    return evidence and not _complete_source_literal(text)
++
++
++def _fits_tool_input(value) -> bool:
++    remaining, nodes = MAX_TOOL_INPUT_BYTES, 4096
++
++    def visit(item, depth=0):
++        nonlocal remaining, nodes
++        nodes -= 1
++        if depth > 12 or nodes < 0 or remaining < 0:
++            return False
++        if isinstance(item, str):
++            if len(item) > remaining:
++                return False
++            remaining -= len(item.encode("utf-8", errors="replace"))
++        elif isinstance(item, dict):
++            if len(item) > nodes:
++                return False
++            return all(
++                visit(key, depth + 1) and visit(child, depth + 1) for key, child in item.items()
++            )
++        elif isinstance(item, list):
++            if len(item) > nodes:
++                return False
++            return all(visit(child, depth + 1) for child in item)
++        return remaining >= 0
++
++    return visit(value)
++
++
++def _typed_payload(value) -> bool:
++    kind = value.get("type")
++    return (
++        isinstance(kind, str)
++        and kind in _OPAQUE_TYPES
++        and any(
++            key in value
++            for key in (
++                "encrypted_content",
++                "thinking",
++                "data",
++                "source",
++                "image_url",
++                "audio",
++                "content",
++            )
++        )
++    )
++
++
++def _opaque_span(text: str) -> bool:
++    return bool(
++        _OPAQUE_LINE.fullmatch(text)
++        and len(set(text)) >= 16
++        and any(c.isupper() for c in text)
++        and any(c.islower() for c in text)
++        and any(c.isdigit() for c in text)
++    )
++
++
++def omit_opaque_lines(text: str) -> str:
++    """Only long, standalone transport-like lines, outside literal code fences.
++
++    Do not remove hashes/IDs, code containing base64 literals, or ordinary long
++    words. This is a conservative structural rule, not semantic detection.
++    """
++    kept, omitted, fenced = [], 0, False
++    for line in text.splitlines():
++        stripped = line.strip()
++        if stripped.startswith(("```", "~~~")):
++            fenced = not fenced
++        candidate = stripped.lstrip(">→ ").strip()
++        if not fenced and _opaque_span(candidate):
++            omitted += 1
++        else:
++            kept.append(line)
++    if not omitted:
++        return text
++    note_omission("opaque_line", omitted)
++    return "\n".join(kept).strip()
++
++
++def _utf8_ends(text: str, limit: int, separator: str) -> str:
++    raw = text.encode("utf-8", errors="replace")
++    budget = max(0, limit - len(separator.encode("utf-8")))
++    head_size = budget // 2
++    tail_size = budget - head_size
++    head = raw[:head_size].decode("utf-8", errors="ignore")
++    tail = raw[-tail_size:].decode("utf-8", errors="ignore") if tail_size else ""
++    return head + separator + tail
++
++
++def _byte_ends(text: str, limit: int, reason: str) -> str:
++    raw = text.encode("utf-8", errors="replace")
++    if len(raw) <= limit:
++        return text
++    note_omission(reason)
++    # Separate segments for the total limit so no newly joined line exceeds
++    # the per-line limit after the byte cut.
++    return _utf8_ends(text, limit, "\n" if reason == "tool_total_bytes" else " ")
++
++
++def bound_tool_result(text: str) -> str:
++    limited = "\n".join(
++        _byte_ends(line, TOOL_LINE_BYTES, "tool_line_bytes") for line in text.splitlines()
++    )
++    return _byte_ends(limited, TOOL_TOTAL_BYTES, "tool_total_bytes")
++
++
++def _select_transport(value, *, transport=False, depth=0, decoded=False):
++    """Select typed useful fields without decoding binary data. Work is bounded."""
++    if depth > 12:
++        raise NonIndexableContentError("structure_depth", decision="unsupported")
++    if transport and isinstance(value, str) and _opaque_span(value.strip()):
++        return None, 1
++    if (
++        transport
++        and isinstance(value, list)
++        and value
++        and all(type(item) is int and 0 <= item <= 255 for item in value)
++    ):
++        return None, 1
++    if transport and isinstance(value, str) and value.lstrip().startswith(("{", "[", '"')):
++        if decoded:
++            return None, 1
++        try:
++            nested = json.loads(value)
++        except (ValueError, RecursionError):
++            return None, 1
++        # This single decode is specific to a typed raw-output field. It is
++        # not the transcript decoder and never decodes base64/byte buffers.
++        return _select_transport(nested, transport=True, depth=depth + 1, decoded=True)
++    if isinstance(value, dict):
++        kind = value.get("type")
++        if _typed_payload(value):
++            return None, 1
++        transport = transport or kind in ("Buffer", "buffer") or value.get("encoding") == "base64"
++        kept, omitted = {}, 0
++        for key, child in value.items():
++            if transport and key in ("type", "encoding"):
++                continue
++            if transport and key in _BUFFER_KEYS:
++                omitted += 1
++                continue
++            selected, count = _select_transport(
++                child,
++                transport=key in _TRANSPORT_FIELDS,
++                depth=depth + 1,
++                decoded=decoded,
++            )
++            omitted += count
++            if selected is not None:
++                kept[key] = selected
++        if omitted and set(kept).issubset(_TRANSPORT_METADATA):
++            kept = {}
++        return (kept if kept else None), omitted
++    if isinstance(value, list):
++        kept, omitted = [], 0
++        for child in value:
++            selected, count = _select_transport(
++                child, transport=transport, depth=depth + 1, decoded=decoded
++            )
++            omitted += count
++            if selected is not None:
++                kept.append(selected)
++        return (kept if kept else None), omitted
++    return value, 0
++
++
++def select_visible_text(content, *, tool_context=False) -> str:
++    """Filter transport-shaped JSON strings; ordinary prose/code/config stays literal."""
++    if isinstance(content, str):
++        text = content.strip()
++        if not text.startswith(("{", "[")):
++            return text
++        try:
++            value = json.loads(text)
++        except (ValueError, RecursionError):
++            if _malformed_transport(text, tool_context=tool_context):
++                note_omission("malformed_transport")
++                return ""
++            return text
++    elif isinstance(content, (dict, list)):
++        value = content
++        text = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
++    else:
++        return ""
++    if tool_context and not _fits_tool_input(value):
++        note_omission("tool_structure_budget")
++        return ""
++    if (
++        not tool_context
++        and isinstance(value, dict)
++        and not (
++            _typed_payload(value)
++            or value.get("type") in ("Buffer", "buffer")
++            or value.get("encoding") == "base64"
++            or any(key in value for key in _TRANSPORT_FIELDS)
++        )
++    ):
++        return text
++    selected, omitted = _select_transport(value)
++    if not omitted:
++        return text
++    note_omission("opaque_transport", omitted)
++    useful = (
++        json.dumps(selected, ensure_ascii=False, separators=(",", ":"))
++        if selected is not None
++        else ""
++    )
++    return useful
++
++
++def select_tool_text(content) -> str:
++    # Bound allocation/JSON traversal before interpreting tool data. Oversized
++    # results are omitted explicitly, not truncated into opaque fragments.
++    if not _fits_tool_input(content):
++        note_omission("tool_input_budget")
++        return ""
++    if isinstance(content, list):
++        parts = []
++        for item in content:
++            if isinstance(item, str):
++                parts.append(select_visible_text(item, tool_context=True))
++            elif isinstance(item, dict) and item.get("type") == "text":
++                parts.append(select_visible_text(item.get("text", ""), tool_context=True))
++            else:
++                note_omission("typed_nontext")
++        text = "\n".join(part for part in parts if part)
++    else:
++        text = select_visible_text(content, tool_context=True)
++    return omit_opaque_lines(text)
++
++
++_CODEX_TYPE = re.compile(r'"type"\s*:\s*"(?:session_meta|response_item|event_msg|turn_context)"')
++
++
++class NonIndexableContentError(ValueError):
++    """Admission refusal: callers must skip without recording a refresh."""
++
++    def __init__(self, reason: str, *, decision: str = "archive-only"):
++        self.reason = reason
++        self.decision = decision
++        super().__init__(reason)
++
++
++def unwrap_transcript(content: str) -> str:
++    """Unwrap exactly one JSON string layer, only for a recognized format."""
++    if not content.lstrip().startswith('"'):
++        return content
++    try:
++        inner = json.loads(content)
++    except (ValueError, RecursionError):
++        return content
++    if not isinstance(inner, str):
++        return content
++    if transcript_family(inner):
++        return inner
++    # One bounded probe diagnoses excess encoding; it is never normalized.
++    if inner.lstrip().startswith('"'):
++        try:
++            probe = json.loads(inner)
++        except (ValueError, RecursionError):
++            probe = None
++        if isinstance(probe, str):
++            # Diagnose deeper encodings from a fixed prefix, without decoding
++            # recursively. This diagnostic cannot produce indexable text.
++            prefix = probe[:4096].replace("\\", "").lstrip('" \t\r\n')
++            if transcript_family(probe) or transcript_family(prefix):
++                raise NonIndexableContentError("encoding_depth", decision="unsupported")
++    return content
++
++
++def _value_family(value, depth=0) -> str:
++    if is_codex_event(value):
++        return "codex"
++    if depth > 4:
++        return ""
++    if isinstance(value, list):
++        return next((family for item in value if (family := _value_family(item, depth + 1))), "")
++    if not isinstance(value, dict):
++        return ""
++    if value.get("type") == "session_metadata":
++        return "gemini"
++    if value.get("type") == "session" and "version" in value:
++        return "pi"
++    if value.get("type") in ("assistant", "user", "human") and "message" in value:
++        return "claude-code"
++    if isinstance(value.get("role", value.get("sender")), str) and any(
++        key in value for key in ("content", "text", "parts")
++    ):
++        return "messages"
++    if value.get("type") == "message" and any(key in value for key in ("message", "user")):
++        return "messages"
++    for key in ("messages", "chat_messages", "contents", "history"):
++        if isinstance(value.get(key), list) and _value_family(value[key], depth + 1):
++            return "messages"
++    mapping = value.get("mapping")
++    if isinstance(mapping, dict) and any(
++        isinstance(node, dict)
++        and isinstance(node.get("message"), dict)
++        and "author" in node["message"]
++        for node in mapping.values()
++    ):
++        return "chatgpt"
++    return ""
++
++
++def transcript_family(content: str) -> str:
++    """Only inspect root JSON/JSONL, never prose or fenced/quoted examples.
++
++    A bounded prefix also recognizes truncated/pretty-printed rollout objects.
++    Field-name mentions by themselves are deliberately insufficient.
++    """
++    stripped = content.lstrip()
++    if not stripped.startswith(("{", "[")):
++        return ""
++    try:
++        value = json.loads(content)
++    except (ValueError, RecursionError):
++        pass
++    else:
++        return _value_family(value)
++    # JSONL can have blank lines or a truncated final record. Only root-like
++    # lines are considered; quoted examples in prose are not a transcript.
++    for line in content.splitlines():
++        try:
++            value = json.loads(line)
++        except (ValueError, RecursionError):
++            continue
++        family = _value_family(value)
++        if family:
++            return family
++    prefix = stripped[:2048]
++    if _CODEX_TYPE.search(prefix):
++        return "codex"
++    if re.search(r'"type"\s*:\s*"session_metadata"', prefix):
++        return "gemini"
++    if re.search(r'"type"\s*:\s*"session"', prefix) and re.search(r'"version"\s*:', prefix):
++        return "pi"
++    if re.search(r'"type"\s*:\s*"(?:assistant|user|human)"', prefix) and re.search(
++        r'"message"\s*:', prefix
++    ):
++        return "claude-code"
++    if re.search(r'"(?:messages|chat_messages|contents|history)"\s*:\s*\[', prefix) and re.search(
++        r'"(?:role|sender)"\s*:', prefix
++    ):
++        return "messages"
++    return ""
++
++
++def looks_like_codex(content: str) -> bool:
++    return transcript_family(content) == "codex"
++
++
++MAX_SOURCE_BYTES = 8 * 1024 * 1024
++
++
++def indexing_text(text: str) -> str:
++    """Selected text has no generated annotations; literal markers are content."""
++    return text.strip()
++
++
++@dataclass(frozen=True)
++class Admission:
++    decision: str
++    conversations: tuple[str, ...]
++    reasons: tuple[str, ...]
++    omissions: dict[str, int]
++    source: str = ""
++
++    @property
++    def text(self) -> str:
++        return "\n\n".join(self.conversations)
++
++    @property
++    def indexable(self) -> bool:
++        return self.decision in ("keep", "sanitize") and bool(indexing_text(self.text))
++
++    def metadata(self) -> dict:
++        return {
++            "ingestion_policy": 1,
++            "ingestion_decision": self.decision,
++            "ingestion_reasons": ",".join(self.reasons),
++            "ingestion_omissions": json.dumps(
++                self.omissions, sort_keys=True, separators=(",", ":")
++            ),
++        }
++
++    def require_conversations(self) -> list[str]:
++        if not self.indexable:
++            if "unparsed_codex" in self.reasons:
++                from .normalize import UnparsedCodexTranscriptError
++
++                raise UnparsedCodexTranscriptError("unparsed_codex")
++            raise NonIndexableContentError(",".join(self.reasons), decision=self.decision)
++        return list(self.conversations)
++
++    def refusal(self) -> dict:
++        return {
++            "success": False,
++            "error": "ingestion admission refused content",
++            "decision": self.decision,
++            "reason_codes": list(self.reasons),
++            "omission_counts": dict(self.omissions),
++        }
++
++
++def admit_text(content: str, *, source: str = "", spellcheck: bool = True) -> Admission:
++    """Classify/select before chunking or writes. Raw input is never archived here.
++
++    Limits are conservative resource budgets, not a semantic relevance score.
++    No storage/provider import is needed by this function or the shadow audit.
++    """
++    if (
++        len(content) > MAX_SOURCE_BYTES
++        or len(content.encode("utf-8", errors="replace")) > MAX_SOURCE_BYTES
++    ):
++        return Admission("unsupported", (), ("source_byte_budget",), {}, source)
++    if content.lstrip().startswith(">"):
++        lines = content.splitlines()
++        quoted = 0
++        for index, line in enumerate(lines):
++            if line.lstrip().startswith(">"):
++                quoted += 1
++            elif line.strip():
++                if quoted >= 3 and transcript_family("\n".join(lines[index:])):
++                    return Admission("archive-only", (), ("mixed_transcript_envelope",), {}, source)
++                break
++    omissions = {}
++    token = _omissions.set(omissions)
++    spellcheck_token = _spellcheck.set(spellcheck)
++    try:
++        from .normalize import _try_normalize_json_split
++
++        split = _try_normalize_json_split(content)
++        reasons = ["normalized_transcript"] if split is not None else []
++        selected = split if split is not None else [select_visible_text(content)]
++        if split is None and not omissions:
++            selected = [content]
++        selected = tuple(text for item in selected if (text := omit_opaque_lines(item)).strip())
++        reasons.extend(sorted(omissions))
++        if not any(indexing_text(item) for item in selected):
++            return Admission(
++                "archive-only", (), tuple(reasons + ["no_useful_content"]), dict(omissions), source
++            )
++        decision = "sanitize" if reasons else "keep"
++        return Admission(
++            decision,
++            selected,
++            tuple(reasons or ["plain_or_structured_text"]),
++            dict(omissions),
++            source,
++        )
++    except NonIndexableContentError as exc:
++        return Admission(exc.decision, (), (exc.reason,), dict(omissions), source)
++    except (ValueError, TypeError, AttributeError, RecursionError):
++        # Malformed supported shapes and parser resource failures must never
++        # be converted into raw prose. Do not expose exception/payload text.
++        return Admission("unsupported", (), ("malformed_structure",), dict(omissions), source)
++    finally:
++        _spellcheck.reset(spellcheck_token)
++        _omissions.reset(token)
++
++
++def is_codex_event(value) -> bool:
++    """Recognize rollout envelopes, including headerless/incomplete fragments."""
++    return isinstance(value, dict) and value.get("type") in (
++        "session_meta",
++        "response_item",
++        "event_msg",
++        "turn_context",
++    )
+diff --git a/mempalace/ingestion_audit.py b/mempalace/ingestion_audit.py
+new file mode 100644
+index 00000000..a989cf6b
+--- /dev/null
++++ b/mempalace/ingestion_audit.py
+@@ -0,0 +1,71 @@
++"""Read-only ingestion shadow audit. Never opens a palace or prints content.
++
++Usage: python -m mempalace.ingestion_audit FILE [FILE ...]
++Only explicitly supplied regular files are read; no discovery or archival copy.
++"""
++
++import argparse
++from collections import Counter
++import json
++
++from .ingestion import NonIndexableContentError, admit_text, indexing_text
++from .normalize import _read_transcript_file
++
++
++def audit_files(paths) -> dict:
++    files = []
++    decisions = Counter({key: 0 for key in ("keep", "sanitize", "archive-only", "unsupported")})
++    for path in paths:
++        source = str(path)
++        row = {"source": source}
++        try:
++            text, fingerprint = _read_transcript_file(source, with_fingerprint=True)
++            row.update(fingerprint)
++            # Spellcheck can read personal entity/config data. The shadow
++            # classifier needs no such dependencies and never imports them.
++            result = admit_text(text, source=source, spellcheck=False)
++            counts = {reason: result.omissions.get(reason, 1) for reason in result.reasons}
++            row.update(
++                decision=result.decision,
++                reason_counts=counts,
++                omission_counts=result.omissions,
++                conversations=len(result.conversations),
++                selected_bytes=len(indexing_text(result.text).encode("utf-8", errors="replace")),
++            )
++        except NonIndexableContentError as exc:
++            row.update(
++                decision=exc.decision,
++                reason_counts={exc.reason: 1},
++                omission_counts={},
++                conversations=0,
++                selected_bytes=0,
++            )
++        except OSError:
++            # Errors may include paths or other source-derived strings. Only
++            # a fixed code is exposed, never exception text or content previews.
++            row.update(
++                decision="unsupported",
++                reason_counts={"unreadable_source": 1},
++                omission_counts={},
++                conversations=0,
++                selected_bytes=0,
++            )
++        decisions[row["decision"]] += 1
++        files.append(row)
++    return {
++        "policy_version": 1,
++        "mode": "shadow",
++        "decision_counts": dict(decisions),
++        "files": files,
++    }
++
++
++def main(argv=None):
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("files", nargs="+", help="Explicit source files (no directories or palace)")
++    args = parser.parse_args(argv)
++    print(json.dumps(audit_files(args.files), ensure_ascii=True, sort_keys=True, indent=2))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/mempalace/mcp_server/tools_diary.py b/mempalace/mcp_server/tools_diary.py
+index 621d73cd..04a9affd 100644
+--- a/mempalace/mcp_server/tools_diary.py
++++ b/mempalace/mcp_server/tools_diary.py
+@@ -28,6 +28,13 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing:
+     except ValueError as e:
+         return {"success": False, "error": str(e)}
+ 
++    from ..ingestion import admit_text, indexing_text
++
++    admission = admit_text(entry)
++    if not admission.indexable:
++        return admission.refusal()
++    entry = indexing_text(admission.text)
++
+     if wing:
+         wing = sanitize_name(wing)
+     else:
+@@ -67,6 +74,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing:
+             "agent": agent_name,
+             "filed_at": now.isoformat(),
+             "date": now.strftime("%Y-%m-%d"),
++            **admission.metadata(),
+         }
+         chunk_size = _config.chunk_size
+         if len(entry) <= chunk_size:
+@@ -603,7 +611,13 @@ def tool_checkpoint(items, diary=None, dedup_threshold=0.9, added_by=None):
+                 {"item": item, "error": "wing, room, content must be non-empty strings"}
+             )
+             continue
+-        dup = tool_check_duplicate(content, threshold=dedup_threshold)
++        from ..ingestion import admit_text, indexing_text
++
++        admission = admit_text(content)
++        if not admission.indexable:
++            out["errors"].append(admission.refusal())
++            continue
++        dup = tool_check_duplicate(indexing_text(admission.text), threshold=dedup_threshold)
+         if dup.get("is_duplicate"):
+             out["duplicates"].append({"room": room, "matches": dup.get("matches", [])})
+             continue
+diff --git a/mempalace/mcp_server/tools_write.py b/mempalace/mcp_server/tools_write.py
+index 7e43a02f..068c4ecf 100644
+--- a/mempalace/mcp_server/tools_write.py
++++ b/mempalace/mcp_server/tools_write.py
+@@ -513,6 +513,13 @@ def tool_add_drawer(
+     except ValueError as e:
+         return {"success": False, "error": str(e)}
+ 
++    from ..ingestion import admit_text, indexing_text
++
++    admission = admit_text(content, source=source_file or "")
++    if not admission.indexable:
++        return admission.refusal()
++    content = indexing_text(admission.text)
++
+     col = _get_collection(create=True)
+     if not col:
+         return _collection_error_or_no_palace()
+@@ -539,6 +546,7 @@ def tool_add_drawer(
+         "added_by": added_by,
+         "filed_at": datetime.now().isoformat(),
+         "id_recipe": ID_RECIPE,
++        **admission.metadata(),
+     }
+     if source_file:
+         # A drawer filed here names a source file the same way a mined one
+@@ -1425,6 +1433,17 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
+     if content is None and wing is None and room is None:
+         return {"success": True, "drawer_id": drawer_id, "noop": True}
+ 
++    from ..ingestion import admit_text, indexing_text
++
++    admission = None
++    if content is not None:
++        try:
++            admission = admit_text(sanitize_content(content))
++        except ValueError as exc:
++            return {"success": False, "error": str(exc)}
++        if not admission.indexable:
++            return admission.refusal()
++
+     col = _get_collection()
+     if not col:
+         return _collection_error_or_no_palace()
+@@ -1439,12 +1458,17 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
+ 
+         new_doc = old_doc
+         if content is not None:
+-            try:
+-                new_doc = sanitize_content(content)
+-            except ValueError as e:
+-                return {"success": False, "error": str(e)}
++            new_doc = indexing_text(admission.text)
++        else:
++            existing_admission = admit_text(old_doc)
++            if not existing_admission.indexable or existing_admission.decision != "keep":
++                # Metadata-only changes can re-embed on some backends. Require
++                # explicit reviewed replacement content for a legacy payload.
++                return {"success": False, "error": "existing_content_requires_review"}
+ 
+         new_meta = dict(old_meta)
++        if admission is not None:
++            new_meta.update(admission.metadata())
+ 
+         if wing is not None:
+             try:
+diff --git a/mempalace/miner.py b/mempalace/miner.py
+index fe0e79e1..21db4f9f 100644
+--- a/mempalace/miner.py
++++ b/mempalace/miner.py
+@@ -52,6 +52,7 @@ from .palace import (
+ from .collision_scan import assert_no_collisions
+ from .hallways import compute_hallways_for_wing
+ from .ids import ID_RECIPE, make_drawer_id_from_chunk
++from .ingestion import admit_text, indexing_text
+ 
+ # Re-exported: callers and tests import these from the miner (#2676).
+ from .project_config import PROJECT_CONFIG_FILENAMES, find_project_config  # noqa: F401
+@@ -1825,6 +1826,11 @@ def add_drawer(
+     miner uses ``_build_drawer_metadata`` + a batched ``collection.upsert``
+     to amortize the embedding model's forward-pass cost across chunks.
+     """
++    admission = admit_text(content, source=source_file)
++    if not admission.indexable:
++        logger.warning("Skipping %s: %s", source_file, ",".join(admission.reasons))
++        return False
++    content = indexing_text(admission.text)
+     drawer_id = make_drawer_id_from_chunk(wing, room, source_file, chunk_index)
+     try:
+         source_mtime = os.path.getmtime(source_file)
+@@ -1843,6 +1849,7 @@ def add_drawer(
+         source_mtime,
+         source_dir_ino=source_dir_ino,
+     )
++    metadata.update(admission.metadata())
+     collection.upsert(
+         documents=[content],
+         ids=[drawer_id],
+@@ -1899,6 +1906,8 @@ def process_file(
+     surface a separate counter in the mine summary (see #1455). It is
+     ``"purge_failed"`` when the stale-drawer purge raised: the file was not
+     mined, and the mine counts it as an error rather than a skip.
++    ``"admission_rejected"`` means the source was nonindexable; no purge,
++    upsert, closet write, or refresh registration occurs for that source.
+ 
+     ``mined_mtimes`` is :func:`prefetch_complete_mtimes`'s map for this
+     mine. A file it proves already filed is skipped without querying the
+@@ -1919,6 +1928,12 @@ def process_file(
+         return 0, "general", None
+     content, read_mtime = read_result
+ 
++    admission = admit_text(content, source=source_file)
++    if not admission.indexable:
++        logger.warning("Skipping %s: %s", source_file, ",".join(admission.reasons))
++        return 0, "general", "admission_rejected"
++    content = indexing_text(admission.text)
++
+     content = content.strip()
+     if len(content) < effective_min:
+         return 0, "general", None
+@@ -2038,14 +2053,19 @@ def process_file(
+                             agent,
+                             chunk["content"],
+                             source_mtime,
+-                            line_start=chunk.get("line_start"),
+-                            line_end=chunk.get("line_end"),
++                            line_start=chunk.get("line_start")
++                            if admission.decision == "keep"
++                            else None,
++                            line_end=chunk.get("line_end")
++                            if admission.decision == "keep"
++                            else None,
+                             content_date=file_content_date,
+                             chunk_total=len(chunks),
+                             content_date_source=file_content_date_source,
+                             source_dir_ino=source_dir_ino,
+                         )
+                     )
++                    batch_metas[-1].update(admission.metadata())
+                 assert_no_collisions(list(zip(batch_ids, batch_metas)), collection)
+                 collection.upsert(
+                     documents=batch_docs,
+diff --git a/mempalace/normalize.py b/mempalace/normalize.py
+index 73878768..a7097aca 100644
+--- a/mempalace/normalize.py
++++ b/mempalace/normalize.py
+@@ -20,15 +20,32 @@ No API key. No internet. Everything local.
+ """
+ 
+ import errno
++import hashlib
+ import json
+ import os
+ import re
+ import stat
+-from pathlib import Path
+ from typing import Optional
+ 
++from .ingestion import (
++    NonIndexableContentError,
++    looks_like_codex,
++    transcript_family,
++    unwrap_transcript,
++    bound_tool_result,
++    note_omission,
++    select_tool_text,
++    select_visible_text,
++    MAX_SOURCE_BYTES,
++    admit_text,
++    indexing_text,
++    spellcheck_enabled,
++    annotate_omissions,
++    omission_report,
++)
++
+ 
+-class UnparsedCodexTranscriptError(ValueError):
++class UnparsedCodexTranscriptError(NonIndexableContentError):
+     """A recognized Codex rollout did not yield a supported conversation."""
+ 
+ 
+@@ -121,7 +138,7 @@ def strip_noise(text: str) -> str:
+     return text.strip()
+ 
+ 
+-def _read_transcript_file(filepath: str) -> str:
++def _read_transcript_file(filepath: str, *, with_fingerprint: bool = False):
+     """Read a transcript source file with the same safety checks normalize()
+     and normalize_conversations() both need: no symlinks, regular files only,
+     size-capped, BOM-tolerant.
+@@ -146,12 +163,21 @@ def _read_transcript_file(filepath: str) -> str:
+             # Text stays prefix-free: this raise is inside the ``try``, so the
+             # ``except OSError`` below composes "Could not read <path>: ...".
+             raise IOError("not a regular file")
+-        if file_stat.st_size > 500 * 1024 * 1024:  # 500 MB safety limit
+-            # Prefix-free for the same reason as the branch above.
+-            raise IOError(f"file too large ({file_stat.st_size // (1024 * 1024)} MB)")
+-        with os.fdopen(fd, "r", encoding="utf-8-sig", errors="replace") as f:
++        if file_stat.st_size > MAX_SOURCE_BYTES:
++            raise NonIndexableContentError("source_byte_budget", decision="unsupported")
++        with os.fdopen(fd, "rb") as f:
+             fd = -1
+-            return f.read()
++            raw = f.read(MAX_SOURCE_BYTES + 1)
++        if len(raw) > MAX_SOURCE_BYTES:
++            raise NonIndexableContentError("source_byte_budget", decision="unsupported")
++        text = raw.decode("utf-8-sig", errors="replace")
++        if with_fingerprint:
++            return text, {
++                "sha256": hashlib.sha256(raw).hexdigest(),
++                "input_bytes": len(raw),
++                "input_lines": len(text.splitlines()),
++            }
++        return text
+     except OSError as e:
+         raise IOError(f"Could not read {filepath}: {e}") from e
+     finally:
+@@ -165,28 +191,15 @@ def _read_transcript_file(filepath: str) -> str:
+ def normalize(filepath: str) -> str:
+     """
+     Load a file and normalize to transcript format if it's a chat export.
+-    Plain text files pass through unchanged.
++    Ordinary text passes through; unsafe envelopes raise an admission refusal.
+     """
+     content = _read_transcript_file(filepath)
+ 
+     if not content.strip():
+         return content
+ 
+-    # Already has > markers — pass through unchanged.
+-    lines = content.split("\n")
+-    if sum(1 for line in lines if line.strip().startswith(">")) >= 3:
+-        return content
+-
+-    # Try JSON normalization. strip_noise is applied inside the Claude Code
+-    # JSONL parser (the only format that injects system tags/hook chrome);
+-    # other formats pass through verbatim.
+-    ext = Path(filepath).suffix.lower()
+-    if ext in (".json", ".jsonl") or content.strip()[:1] in ("{", "["):
+-        normalized = _try_normalize_json(content)
+-        if normalized:
+-            return normalized
+-
+-    return content
++    admission = admit_text(content, source=filepath)
++    return annotate_omissions("\n\n".join(admission.require_conversations()), admission.omissions)
+ 
+ 
+ def normalize_conversations(filepath: str) -> list:
+@@ -214,17 +227,10 @@ def normalize_conversations(filepath: str) -> list:
+     if not content.strip():
+         return []
+ 
+-    lines = content.split("\n")
+-    if sum(1 for line in lines if line.strip().startswith(">")) >= 3:
+-        return [content]
+-
+-    ext = Path(filepath).suffix.lower()
+-    if ext in (".json", ".jsonl") or content.strip()[:1] in ("{", "["):
+-        split = _try_normalize_json_split(content)
+-        if split:
+-            return split
+-
+-    return [content]
++    admission = admit_text(content, source=filepath)
++    return [
++        annotate_omissions(text, admission.omissions) for text in admission.require_conversations()
++    ]
+ 
+ 
+ def _try_normalize_json(content: str) -> Optional[str]:
+@@ -242,6 +248,12 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
+     a separate list entry (bundle formats) or a single-element list.
+     """
+ 
++    content = unwrap_transcript(content)
++    # Extensions are only hints. A .json document can be prose explaining a
++    # format; do not interpret JSON examples embedded in that prose as events.
++    if not content.lstrip().startswith(("{", "[")):
++        return None
++
+     normalized = _try_claude_code_jsonl(content)
+     if normalized:
+         return [normalized]
+@@ -254,16 +266,8 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
+     # conversation schema changed (or its first turn is still incomplete).
+     # Keep this outside the parser so additional supported schemas can return
+     # normally without changing the fallback boundary.
+-    for line in content.splitlines():
+-        try:
+-            entry = json.loads(line)
+-        except json.JSONDecodeError:
+-            continue
+-        if isinstance(entry, dict) and entry.get("type") == "session_meta":
+-            raise UnparsedCodexTranscriptError(
+-                "Codex rollout contains no complete supported conversation; "
+-                "refusing raw JSON fallback"
+-            )
++    if looks_like_codex(content):
++        raise UnparsedCodexTranscriptError("unparsed_codex")
+ 
+     normalized = _try_gemini_jsonl(content)
+     if normalized:
+@@ -276,6 +280,8 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
+     try:
+         data = json.loads(content)
+     except json.JSONDecodeError:
++        if transcript_family(content):
++            raise NonIndexableContentError("malformed_transcript")
+         return None
+ 
+     normalized = _try_gemini_json(data)
+@@ -295,6 +301,8 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
+         if normalized:
+             return [normalized]
+ 
++    if transcript_family(content):
++        raise NonIndexableContentError("unsupported_or_incomplete_transcript")
+     return None
+ 
+ 
+@@ -384,6 +392,8 @@ def _try_codex_jsonl(content: str) -> Optional[str]:
+             continue
+ 
+         if entry_type != "event_msg":
++            if entry_type in ("response_item", "turn_context"):
++                note_omission("codex_noncanonical_event")
+             continue
+ 
+         payload = entry.get("payload", {})
+@@ -394,7 +404,7 @@ def _try_codex_jsonl(content: str) -> Optional[str]:
+         msg = payload.get("message")
+         if not isinstance(msg, str):
+             continue
+-        text = msg.strip()
++        text = select_visible_text(msg)
+         if not text:
+             continue
+ 
+@@ -461,7 +471,7 @@ def _try_gemini_jsonl(content: str) -> Optional[str]:
+                 continue
+             text = block.get("text", "")
+             if isinstance(text, str) and text.strip():
+-                parts.append(text)
++                parts.append(select_visible_text(text))
+         if not parts:
+             continue
+         joined = "\n".join(parts)
+@@ -575,9 +585,9 @@ def _try_gemini_json(data) -> Optional[str]:
+             text_parts = []
+             for p in parts:
+                 if isinstance(p, str):
+-                    text_parts.append(p)
++                    text_parts.append(select_visible_text(p))
+                 elif isinstance(p, dict) and "text" in p:
+-                    text_parts.append(p["text"])
++                    text_parts.append(select_visible_text(p["text"]))
+             text = " ".join(text_parts).strip()
+         else:
+             text = _extract_content(item.get("content", ""))
+@@ -656,7 +666,9 @@ def _collect_claude_messages(items) -> list:
+         if not isinstance(item, dict):
+             continue
+         role = item.get("role") or item.get("sender", "")
+-        text = _extract_content(item.get("content", "")) or (item.get("text") or "").strip()
++        text = _extract_content(item.get("content", "")) or select_visible_text(
++            item.get("text") or ""
++        )
+         if role in ("user", "human") and text:
+             messages.append(("user", text))
+         elif role in ("assistant", "ai") and text:
+@@ -706,7 +718,9 @@ def _try_chatgpt_json(data) -> Optional[str]:
+                 parts = content.get("parts") if isinstance(content, dict) else None
+                 if not isinstance(parts, list):
+                     parts = []
+-                text = " ".join(str(p) for p in parts if isinstance(p, str) and p).strip()
++                text = " ".join(
++                    select_visible_text(p) for p in parts if isinstance(p, str) and p
++                ).strip()
+                 if role == "user" and text:
+                     messages.append(("user", text))
+                 elif role == "assistant" and text:
+@@ -777,7 +791,7 @@ def _try_slack_json(data) -> Optional[str]:
+         # Sanitize speaker ID: strip brackets, newlines, and control chars
+         # to prevent chunk-boundary injection via crafted exports
+         user_id = re.sub(r"[\[\]\n\r\x00-\x1f]", "_", raw_user_id).strip()
+-        text = item.get("text", "").strip()
++        text = select_visible_text(item.get("text", ""))
+         if not text or not user_id:
+             continue
+         if user_id not in seen_users:
+@@ -817,20 +831,9 @@ def _try_continue_json(data) -> Optional[str]:
+         role = item.get("role", "")
+         content = item.get("content", "")
+ 
+-        # Extract text from string or list-of-blocks content
+-        if isinstance(content, list):
+-            parts = []
+-            for block in content:
+-                if isinstance(block, dict):
+-                    if block.get("type") == "text":
+-                        parts.append(block.get("text", ""))
+-                elif isinstance(block, str):
+-                    parts.append(block)
+-            text = "\n".join(p for p in parts if p).strip()
+-        elif isinstance(content, str):
+-            text = content.strip()
+-        else:
+-            continue
++        text = (
++            _format_tool_result(content, "Unknown") if role == "tool" else _extract_content(content)
++        )
+ 
+         if not text:
+             continue
+@@ -860,16 +863,16 @@ def _extract_content(content, tool_use_map: dict = None) -> str:
+                       select the right formatting strategy for tool_result blocks.
+     """
+     if isinstance(content, str):
+-        return content.strip()
++        return select_visible_text(content)
+     if isinstance(content, list):
+         parts = []
+         for item in content:
+             if isinstance(item, str):
+-                parts.append(item)
++                parts.append(select_visible_text(item))
+             elif isinstance(item, dict):
+                 block_type = item.get("type")
+                 if block_type == "text":
+-                    parts.append(item.get("text", ""))
++                    parts.append(select_visible_text(item.get("text", "")))
+                 elif block_type == "tool_use":
+                     parts.append(_format_tool_use(item))
+                 elif block_type == "tool_result":
+@@ -879,9 +882,11 @@ def _extract_content(content, tool_use_map: dict = None) -> str:
+                     formatted = _format_tool_result(result_content, tname)
+                     if formatted:
+                         parts.append(formatted)
++                else:
++                    note_omission("typed_nontext")
+         return "\n".join(p for p in parts if p).strip()
+     if isinstance(content, dict):
+-        return content.get("text", "").strip()
++        return select_visible_text(content.get("text", ""))
+     return ""
+ 
+ 
+@@ -923,7 +928,7 @@ def _format_tool_use(block: dict) -> str:
+         return f"[{name} {path}]"
+ 
+     # Unknown tool — serialize input, truncate
+-    summary = json.dumps(inp, separators=(",", ":"))
++    summary = indexing_text(select_tool_text(inp))
+     if len(summary) > 200:
+         summary = summary[:200] + "..."
+     return f"[{name}] {summary}"
+@@ -931,7 +936,6 @@ def _format_tool_use(block: dict) -> str:
+ 
+ _TOOL_RESULT_MAX_LINES_BASH = 20  # head and tail line count
+ _TOOL_RESULT_MAX_MATCHES = 20  # Grep/Glob cap
+-_TOOL_RESULT_MAX_BYTES = 2048  # fallback cap for unknown tools
+ 
+ 
+ def _format_tool_result(content, tool_name: str) -> str:
+@@ -944,24 +948,20 @@ def _format_tool_result(content, tool_name: str) -> str:
+     Returns:
+         Formatted string prefixed with ``→ ``, or empty string if omitted.
+     """
+-    # Normalize list-of-blocks to plain text
+-    if isinstance(content, list):
+-        parts = []
+-        for item in content:
+-            if isinstance(item, dict) and item.get("type") == "text":
+-                parts.append(item.get("text", ""))
+-            elif isinstance(item, str):
+-                parts.append(item)
+-        text = "\n".join(parts)
+-    else:
+-        text = str(content) if content else ""
++    with omission_report() as (omissions, standalone):
++        text = _tool_result_text(content, tool_name)
++        return annotate_omissions(text, omissions, tool=True) if standalone else text
++
+ 
+-    text = text.strip()
++def _tool_result_text(content, tool_name: str) -> str:
++    """Keep selected content separate from annotations throughout formatting."""
++    text = select_tool_text(content)
+     if not text:
+         return ""
+ 
+     # Read/Edit/Write — omit result (content is in palace or git)
+     if tool_name in ("Read", "Edit", "Write"):
++        note_omission("tool_result_by_policy")
+         return ""
+ 
+     lines = text.split("\n")
+@@ -970,36 +970,29 @@ def _format_tool_result(content, tool_name: str) -> str:
+     if tool_name == "Bash":
+         n = _TOOL_RESULT_MAX_LINES_BASH
+         if len(lines) <= n * 2:
+-            return "→ " + "\n→ ".join(lines)
++            return bound_tool_result("→ " + "\n→ ".join(lines))
+         head = lines[:n]
+         tail = lines[-n:]
+         omitted = len(lines) - 2 * n
+-        return (
+-            "→ "
+-            + "\n→ ".join(head)
+-            + f"\n→ ... [{omitted} lines omitted] ..."
+-            + "\n→ "
+-            + "\n→ ".join(tail)
+-        )
++        note_omission("tool_lines", omitted)
++        return bound_tool_result("→ " + "\n→ ".join(head) + "\n→ " + "\n→ ".join(tail))
+ 
+     # Grep/Glob — cap matches
+     if tool_name in ("Grep", "Glob"):
+         cap = _TOOL_RESULT_MAX_MATCHES
+         if len(lines) <= cap:
+-            return "→ " + "\n→ ".join(lines)
++            return bound_tool_result("→ " + "\n→ ".join(lines))
+         kept = lines[:cap]
+         remaining = len(lines) - cap
+-        return "→ " + "\n→ ".join(kept) + f"\n→ ... [{remaining} more matches]"
++        note_omission("tool_lines", remaining)
++        return bound_tool_result("→ " + "\n→ ".join(kept))
+ 
+-    # Unknown — byte cap
+-    if len(text) > _TOOL_RESULT_MAX_BYTES:
+-        return "→ " + text[:_TOOL_RESULT_MAX_BYTES] + f"... [truncated, {len(text)} chars]"
+-    return "→ " + text
++    return bound_tool_result("→ " + text)
+ 
+ 
+ def _messages_to_transcript(messages: list, spellcheck: bool = True) -> str:
+     """Convert [(role, text), ...] to transcript format with > markers."""
+-    if spellcheck:
++    if spellcheck and spellcheck_enabled():
+         try:
+             from mempalace.spellcheck import spellcheck_user_text
+ 
+@@ -1033,7 +1026,7 @@ if __name__ == "__main__":
+     import sys
+ 
+     if len(sys.argv) < 2:
+-        print("Usage: python normalize.py <filepath>")
++        print("Usage: python -m mempalace.normalize <filepath>")
+         sys.exit(1)
+     filepath = sys.argv[1]
+     result = normalize(filepath)
+diff --git a/scripts/record_check.py b/scripts/record_check.py
+new file mode 100644
+index 00000000..4b4dccd1
+--- /dev/null
++++ b/scripts/record_check.py
+@@ -0,0 +1,28 @@
++"""Run a local check and retain its exact command, output, and exit status."""
++
++import os
++from pathlib import Path
++import shlex
++import subprocess
++import sys
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    output = root / sys.argv[1]
++    command = sys.argv[2:]
++    env = dict(os.environ, TMPDIR=str(root / "test-tmp"))
++    result = subprocess.run(
++        command, cwd=root, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
++    )
++    report = (
++        f"TMPDIR={env['TMPDIR']} {shlex.join(command)}\n"
++        f"{result.stdout}\nEXIT STATUS: {result.returncode}\n"
++    )
++    output.write_text(report, encoding="utf-8")
++    print(report, end="")
++    return result.returncode
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/scripts/shadow_demo.py b/scripts/shadow_demo.py
+new file mode 100644
+index 00000000..22ee7321
+--- /dev/null
++++ b/scripts/shadow_demo.py
+@@ -0,0 +1,60 @@
++"""Generate disposable synthetic audit inputs and run the real shadow CLI."""
++
++import base64
++import hashlib
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    directory = root / "test-tmp" / "shadow-demo"
++    directory.mkdir(parents=True, exist_ok=True)
++    sentinel = "SYNTHETIC_OPAQUE_DO_NOT_INDEX"
++    fragments = json.dumps(
++        {"type": "response_item", "payload": {"type": "reasoning", "encrypted_content": sentinel}}
++    )
++    canonical = (
++        "\n".join(
++            json.dumps(event)
++            for event in [
++                {"type": "session_meta"},
++                {
++                    "type": "event_msg",
++                    "payload": {"type": "user_message", "message": "Tokyo uses JST."},
++                },
++                {
++                    "type": "event_msg",
++                    "payload": {"type": "agent_message", "message": "JST is UTC+9."},
++                },
++            ]
++        )
++        + "\n"
++        + fragments
++    )
++    samples = {
++        "facts.json": json.dumps({"retries": 3, "fact": "Tokyo uses JST", "bytes": [1, 2, 3]}),
++        "canonical.jsonl": canonical,
++        "headerless.jsonl": fragments,
++        "encoded.json": json.dumps(canonical),
++        "excess-encoding.json": json.dumps(json.dumps(canonical)),
++        "command-output.txt": "ERROR: missing synthetic dependency\n"
++        + base64.b64encode(bytes(range(256)) * 12).decode(),
++    }
++    paths = []
++    for name, content in samples.items():
++        path = directory / name
++        path.write_text(content, encoding="utf-8")
++        paths.append(path)
++    before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
++    command = [sys.executable, "-m", "mempalace.ingestion_audit", *(str(path) for path in paths)]
++    result = subprocess.run(command, cwd=root, env=dict(os.environ, TMPDIR=str(root / "test-tmp")))
++    assert before == {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
++    return result.returncode
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/tests/ingestion_safeguards/conftest.py b/tests/ingestion_safeguards/conftest.py
+new file mode 100644
+index 00000000..a18f9a52
+--- /dev/null
++++ b/tests/ingestion_safeguards/conftest.py
+@@ -0,0 +1,26 @@
++"""Synthetic, offline tests: no palace, discovery, or model initialization."""
++
++import socket
++
++import pytest
++
++
++@pytest.fixture(autouse=True)
++def offline_boundaries(monkeypatch):
++    def forbidden(*args, **kwargs):
++        raise AssertionError("Network/service/model boundary reached by an offline test")
++
++    monkeypatch.setattr(socket, "connect", forbidden, raising=False)
++    monkeypatch.setattr(socket.socket, "connect", forbidden)
++    monkeypatch.setattr(socket.socket, "connect_ex", forbidden)
++    monkeypatch.setattr(socket, "getaddrinfo", forbidden)
++    monkeypatch.setattr(socket, "create_connection", forbidden)
++    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
++    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
++    import mempalace.embedding as embedding
++    import mempalace.server_registry as registry
++    import mempalace.spellcheck as spellcheck
++
++    monkeypatch.setattr(embedding, "configured_embedding_function", forbidden)
++    monkeypatch.setattr(registry, "read_live_serverinfo", forbidden)
++    monkeypatch.setattr(spellcheck, "spellcheck_user_text", lambda text: text)
+diff --git a/tests/ingestion_safeguards/test_ingestion.py b/tests/ingestion_safeguards/test_ingestion.py
+new file mode 100644
+index 00000000..6d07627d
+--- /dev/null
++++ b/tests/ingestion_safeguards/test_ingestion.py
+@@ -0,0 +1,509 @@
++import json
++import base64
++import time
++
++import pytest
++
++from mempalace.normalize import UnparsedCodexTranscriptError, normalize, normalize_conversations
++
++
++OPAQUE = "FORBIDDEN_OPAQUE_SENTINEL"
++
++
++def codex_fragments():
++    return "\n".join(
++        json.dumps(event)
++        for event in [
++            {
++                "type": "response_item",
++                "payload": {"type": "reasoning", "encrypted_content": OPAQUE},
++            },
++            {
++                "type": "response_item",
++                "payload": {
++                    "type": "function_call_output",
++                    "output": json.dumps({"rawOutput": {"base64": OPAQUE, "bytes": [1, 2, 3]}}),
++                },
++            },
++        ]
++    )
++
++
++def test_headerless_codex_fragments_never_fall_back_to_raw_text(tmp_path):
++    source = tmp_path / "fragment.jsonl"
++    source.write_text(codex_fragments())
++    with pytest.raises(UnparsedCodexTranscriptError):
++        normalize_conversations(str(source))
++
++
++@pytest.mark.parametrize(
++    "payload",
++    [
++        codex_fragments() + "\n> a\n> b\n> c",
++        '  {"type": "response_item", "payload": {"type": "reasoning",',
++        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
++        "\n\t"
++        + json.dumps({"type": "session_meta"})
++        + "\n\n"
++        + json.dumps(
++            {"type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}
++        ),
++    ],
++)
++@pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
++def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(
++    tmp_path, payload, normalizer
++):
++    source = tmp_path / "session.txt"
++    source.write_text(payload)
++    with pytest.raises(UnparsedCodexTranscriptError):
++        normalizer(str(source))
++
++
++def canonical_codex():
++    return (
++        "\n\n \t\n".join(
++            json.dumps(event)
++            for event in [
++                {"type": "session_meta", "payload": {"id": "synthetic"}},
++                {
++                    "type": "event_msg",
++                    "payload": {"type": "user_message", "message": "Remember 東京 uses JST."},
++                },
++                {
++                    "type": "event_msg",
++                    "payload": {"type": "agent_message", "message": "JST is UTC+9."},
++                },
++            ]
++        )
++        + "\n"
++        + codex_fragments()
++    )
++
++
++def test_canonical_codex_keeps_useful_turns_and_skips_transport(tmp_path):
++    source = tmp_path / "good.jsonl"
++    source.write_text(canonical_codex())
++    result = normalize_conversations(str(source))
++    assert len(result) == 1
++    assert "東京 uses JST" in result[0] and "JST is UTC+9" in result[0]
++    assert OPAQUE not in result[0] and "response_item" not in result[0]
++
++
++@pytest.mark.parametrize(
++    "content",
++    [
++        "Discussion of encrypted_content and response_item is useful prose.",
++        'Example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```',
++        "> quote one\n> quote two\n> quote three\nDiscuss session_meta here.",
++        '{"encrypted_content":"a documented config option","retries":3,"bytes":[1,2,3]}',
++        'def response_item():\n    return {"type": "session_meta"}',
++        "ID: " + "a" * 64 + "\n事实: 東京 is in Japan.\nHe kōrero tēnei.",
++    ],
++)
++def test_legitimate_text_code_and_config_are_preserved(tmp_path, content):
++    source = tmp_path / "facts.json"
++    source.write_text(content)
++    assert normalize_conversations(str(source)) == [content]
++
++
++def test_json_encoded_supported_transcript_is_unwrapped_once(tmp_path):
++    source = tmp_path / "encoded.txt"
++    source.write_text(json.dumps(canonical_codex()))
++    result = normalize_conversations(str(source))
++    assert "東京 uses JST" in result[0] and "JST is UTC+9" in result[0]
++    assert OPAQUE not in result[0] and "session_meta" not in result[0]
++
++
++def test_json_encoded_fragments_still_fail_closed(tmp_path):
++    source = tmp_path / "encoded.json"
++    source.write_text(json.dumps(codex_fragments()))
++    with pytest.raises(UnparsedCodexTranscriptError):
++        normalize_conversations(str(source))
++
++
++def test_excess_encoding_is_explicitly_unsupported(tmp_path):
++    source = tmp_path / "too-encoded.json"
++    source.write_text(json.dumps(json.dumps(canonical_codex())))
++    with pytest.raises(ValueError, match="encoding_depth"):
++        normalize_conversations(str(source))
++
++
++def test_ordinary_json_string_remains_literal(tmp_path):
++    source = tmp_path / "literal.json"
++    text = json.dumps("Examples mention response_item and encrypted_content.")
++    source.write_text(text)
++    assert normalize_conversations(str(source)) == [text]
++
++
++@pytest.mark.parametrize(
++    "payload",
++    [
++        json.dumps(
++            {
++                "type": "assistant",
++                "message": {"content": [{"type": "thinking", "thinking": OPAQUE}]},
++            }
++        ),
++        json.dumps({"messages": [{"role": "future-role", "content": OPAQUE}]}),
++        '{"messages":[{"role":"assistant","content":',
++        json.dumps({"history": [{"role": "user", "content": "Incomplete"}]}),
++    ],
++)
++def test_other_recognized_incomplete_envelopes_are_nonindexable(tmp_path, payload):
++    from mempalace.ingestion import NonIndexableContentError
++
++    source = tmp_path / "unsupported.json"
++    source.write_text(payload)
++    with pytest.raises(NonIndexableContentError):
++        normalize_conversations(str(source))
++
++
++def test_nested_schema_example_in_config_is_not_a_transcript(tmp_path):
++    text = json.dumps(
++        {
++            "example": {"type": "response_item", "payload": {"type": "reasoning"}},
++            "messages": ["start", "stop"],
++        }
++    )
++    source = tmp_path / "config.json"
++    source.write_text(text)
++    assert normalize_conversations(str(source)) == [text]
++
++
++def claude_tool_transcript(output, tool="UnfamiliarTool"):
++    return "\n".join(
++        json.dumps(event)
++        for event in [
++            {"type": "user", "message": {"content": "Why did the synthetic build fail?"}},
++            {
++                "type": "assistant",
++                "message": {
++                    "content": [
++                        {"type": "text", "text": "The build needs a missing dependency."},
++                        {
++                            "type": "tool_use",
++                            "id": "call-1",
++                            "name": tool,
++                            "input": {"command": "make test"},
++                        },
++                        {"type": "thinking", "thinking": OPAQUE},
++                        {"type": "image", "source": {"data": OPAQUE}},
++                    ]
++                },
++            },
++            {
++                "type": "user",
++                "message": {
++                    "content": [
++                        {"type": "tool_result", "tool_use_id": "call-1", "content": output},
++                    ]
++                },
++            },
++        ]
++    )
++
++
++def test_claude_unknown_tool_keeps_failure_evidence_without_transport(tmp_path):
++    source = tmp_path / "claude.jsonl"
++    source.write_text(
++        claude_tool_transcript(
++            json.dumps(
++                {
++                    "stderr": "ModuleNotFoundError: synthetic_dependency",
++                    "exit_code": 1,
++                    "rawOutput": {"base64": OPAQUE, "bytes": [91, 92, 93]},
++                    "details": {"type": "reasoning", "encrypted_content": OPAQUE},
++                }
++            )
++        )
++    )
++    text = normalize_conversations(str(source))[0]
++    assert OPAQUE not in text and "91,92,93" not in text.replace(" ", "")
++    assert "ModuleNotFoundError: synthetic_dependency" in text and '"exit_code":1' in text.replace(
++        " ", ""
++    )
++    assert "omitted" in text and "missing dependency" in text
++
++
++def test_typed_opaque_only_content_does_not_make_an_omission_memory():
++    from mempalace.normalize import _extract_content, _format_tool_result
++
++    raw = json.dumps({"type": "reasoning", "encrypted_content": OPAQUE})
++    assert _extract_content(raw) == ""
++    assert _format_tool_result(raw, "Unknown") == ""
++
++
++def test_tool_config_json_and_code_remain_useful():
++    from mempalace.normalize import _format_tool_result
++
++    config = '{"bytes":[1,2,3],"encrypted_content":"documented option","retries":3}'
++    assert config in _format_tool_result(config, "Unknown")
++    code = 'const encrypted_content = "literal example";\nconsole.log("事实");'
++    assert code in _format_tool_result(code, "Unknown")
++
++
++def opaque_line():
++    return base64.b64encode(bytes(range(256)) * 12).decode("ascii")
++
++
++@pytest.mark.parametrize("tool", ["Bash", "Unknown", "Grep", "Glob"])
++def test_long_single_line_tool_payload_is_omitted_with_useful_evidence(tool):
++    from mempalace.normalize import _format_tool_result
++
++    blob = opaque_line()
++    result = _format_tool_result(
++        "Build started\n\n \t" + blob + "  \n\nERROR: missing header", tool
++    )
++    assert blob[:100] not in result
++    assert "Build started" in result and "ERROR: missing header" in result
++    assert "ingestion omitted" in result
++    assert _format_tool_result(blob, tool) == ""
++
++
++@pytest.mark.parametrize("tool", ["Bash", "Unknown", "Grep"])
++def test_tool_result_line_and_total_limits_are_utf8_byte_aware(tool):
++    from mempalace.normalize import _format_tool_result
++
++    result = _format_tool_result("\n".join("証拠 " + "界" * 1200 for _ in range(70)), tool)
++    assert 0 < len(result.encode("utf-8")) <= 2048
++    assert all(len(line.encode("utf-8")) <= 512 for line in result.splitlines())
++    assert "omitted" in result and "\ufffd" not in result
++
++
++def test_tool_selection_work_is_bounded_and_code_examples_survive():
++    from mempalace.normalize import _format_tool_result
++
++    started = time.monotonic()
++    result = _format_tool_result("x" * 2_000_000, "Unknown")
++    assert time.monotonic() - started < 5
++    assert result == ""
++    example = 'const fixture = "' + opaque_line() + '";'
++    assert "const fixture" in _format_tool_result(example, "Bash")
++
++
++def test_normalizer_refuses_opaque_only_sources_and_source_budget(tmp_path):
++    from mempalace.ingestion import NonIndexableContentError, MAX_SOURCE_BYTES
++
++    source = tmp_path / "opaque.txt"
++    source.write_text(opaque_line())
++    with pytest.raises(NonIndexableContentError, match="no_useful_content"):
++        normalize_conversations(str(source))
++    source.write_text("x" * (MAX_SOURCE_BYTES + 1))
++    with pytest.raises(NonIndexableContentError, match="source_byte_budget"):
++        normalize_conversations(str(source))
++
++
++def test_nested_serialized_raw_buffer_and_buffer_only_results_are_not_text():
++    from mempalace.normalize import _format_tool_result
++
++    text = json.dumps(
++        {
++            "stderr": "Permission denied: synthetic path",
++            "rawOutput": json.dumps({"base64": OPAQUE, "bytes": [3, 5, 7]}),
++        }
++    )
++    result = _format_tool_result(text, "Unknown")
++    assert "Permission denied" in result and OPAQUE not in result
++    assert _format_tool_result('{"type":"Buffer","data":[1,2,3]}', "Unknown") == ""
++
++
++def test_codex_canonical_message_strings_are_selected_before_flattening(tmp_path):
++    source = tmp_path / "canonical-with-transport.jsonl"
++    source.write_text(
++        "\n".join(
++            json.dumps(event)
++            for event in [
++                {"type": "session_meta"},
++                {
++                    "type": "event_msg",
++                    "payload": {"type": "user_message", "message": "Explain this error"},
++                },
++                {
++                    "type": "event_msg",
++                    "payload": {
++                        "type": "agent_message",
++                        "message": json.dumps(
++                            {
++                                "stderr": "ERROR: missing synthetic header",
++                                "rawOutput": {"base64": OPAQUE},
++                            }
++                        ),
++                    },
++                },
++            ]
++        )
++    )
++    result = normalize_conversations(str(source))[0]
++    assert "missing synthetic header" in result and OPAQUE not in result
++
++
++def test_oversized_tool_block_list_is_omitted_before_flattening():
++    from mempalace.normalize import _format_tool_result
++
++    assert _format_tool_result([{"type": "text", "text": "x" * 2_000_000}], "Unknown") == ""
++
++
++@pytest.mark.parametrize(
++    "content",
++    [
++        "[" * 2000 + "0" + "]" * 2000,
++        '{"type":"assistant","message":{"content":[{"type":[],"text":"malformed"}]}}',
++    ],
++)
++def test_admission_reports_hostile_structure_without_crashing(content):
++    from mempalace.ingestion import admit_text
++
++    result = admit_text(content)
++    assert result.decision in ("archive-only", "unsupported") and not result.indexable
++
++
++def test_config_with_type_image_but_no_media_payload_is_preserved():
++    from mempalace.ingestion import admit_text
++
++    content = '{"type":"image","description":"image is a valid config choice"}'
++    result = admit_text(content)
++    assert result.decision == "keep" and result.text == content
++
++
++def test_more_than_one_extra_encoding_layer_cannot_return_as_prose():
++    from mempalace.ingestion import admit_text
++
++    content = canonical_codex()
++    for _ in range(4):
++        content = json.dumps(content)
++    result = admit_text(content)
++    assert result.decision == "unsupported" and "encoding_depth" in result.reasons
++
++
++def test_malformed_typed_transport_does_not_fall_back_to_tool_prose():
++    from mempalace.normalize import _format_tool_result
++
++    content = '{"rawOutput":{"base64":"' + OPAQUE
++    assert _format_tool_result(content, "Unknown") == ""
++
++
++def test_continue_tool_messages_get_the_same_selection_and_limits(tmp_path):
++    source = tmp_path / "continue.json"
++    source.write_text(
++        json.dumps(
++            {
++                "history": [
++                    {"role": "user", "content": "Why did it fail?"},
++                    {"role": "assistant", "content": "The build failed."},
++                    {
++                        "role": "tool",
++                        "content": json.dumps(
++                            {"stderr": "ERROR: missing dependency", "rawOutput": {"base64": OPAQUE}}
++                        ),
++                    },
++                ]
++            }
++        )
++    )
++    result = normalize_conversations(str(source))[0]
++    assert "missing dependency" in result and OPAQUE not in result
++
++
++def test_structure_limits_have_an_explicit_resource_outcome():
++    from mempalace.ingestion import admit_text
++
++    result = admit_text("[" * 2000 + "0" + "]" * 2000)
++    assert result.decision == "unsupported"
++    assert any("structure" in reason for reason in result.reasons)
++
++
++def test_wrong_tool_identifier_type_is_reported_instead_of_crashing():
++    from mempalace.ingestion import admit_text
++
++    result = admit_text(
++        json.dumps(
++            {
++                "type": "assistant",
++                "message": {"content": [{"type": "tool_use", "id": ["invalid"], "input": {}}]},
++            }
++        )
++    )
++    assert result.decision == "unsupported" and "malformed_structure" in result.reasons
++
++
++def test_quote_preamble_does_not_hide_unquoted_codex_envelopes():
++    from mempalace.ingestion import admit_text
++
++    result = admit_text("> injected one\n> injected two\n> injected three\n" + codex_fragments())
++    assert not result.indexable and result.decision == "archive-only"
++
++
++@pytest.mark.parametrize(
++    "transport",
++    [
++        {"rawOutput": opaque_line()},
++        {"rawOutput": [11, 22, 33, 44]},
++        {"audio": {"data": OPAQUE, "format": "wav"}},
++        {"image": {"bytes": [11, 22, 33, 44], "mime_type": "image/png"}},
++    ],
++)
++def test_typed_raw_media_transports_keep_surrounding_tool_evidence(transport):
++    from mempalace.normalize import _format_tool_result
++
++    result = _format_tool_result(
++        json.dumps({"stderr": "ERROR: synthetic transport failed", **transport}), "Unknown"
++    )
++    assert "synthetic transport failed" in result
++    assert OPAQUE not in result and opaque_line()[:60] not in result
++    assert "11,22,33,44" not in result.replace(" ", "")
++    assert _format_tool_result(json.dumps(transport), "Unknown") == ""
++
++
++def test_size_omission_provenance_does_not_leave_indexable_marker_fragments():
++    from mempalace.ingestion import admit_text, indexing_text
++
++    for width in range(220, 480, 7):
++        evidence = "\n".join(["Evidence: " + "x" * 600] * 7 + ["Evidence: " + "x" * width])
++        # Exercise the indexable channel, before chunking. The legacy display
++        # formatter deliberately includes complete annotations at its exit.
++        admission = admit_text(claude_tool_transcript(evidence, "Bash"), spellcheck=False)
++        clean = indexing_text(admission.text).split("→ ", 1)[1]
++        assert admission.omissions["tool_line_bytes"] > 0
++        assert admission.omissions["tool_total_bytes"] > 0
++        assert "ingestion" not in clean and "omitted" not in clean and "tool_" not in clean
++        assert "[" not in clean and "]" not in clean
++
++
++@pytest.mark.parametrize(
++    "content",
++    [
++        '{"type":"session_metadata","sessionId":"synthetic"}',
++        '{"type":"session","version":3,"id":"synthetic"}',
++        '[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]',
++    ],
++)
++def test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back(tmp_path, content):
++    from mempalace.ingestion import NonIndexableContentError
++
++    source = tmp_path / "incomplete.jsonl"
++    source.write_text(content)
++    with pytest.raises(NonIndexableContentError):
++        normalize_conversations(str(source))
++
++
++@pytest.mark.parametrize(
++    "events",
++    [
++        [
++            {"type": "session_metadata"},
++            {"type": "user", "content": [{"text": "東京 uses JST."}]},
++            {"type": "gemini", "content": [{"text": "JST is UTC+9."}]},
++        ],
++        [
++            {"type": "session", "version": 3},
++            {"type": "message", "message": {"role": "user", "content": "東京 uses JST."}},
++            {"type": "message", "message": {"role": "assistant", "content": "JST is UTC+9."}},
++        ],
++    ],
++)
++def test_other_canonical_supported_sessions_remain_readable(tmp_path, events):
++    source = tmp_path / "supported.jsonl"
++    source.write_text("\n".join(json.dumps(event) for event in events))
++    result = normalize_conversations(str(source))[0]
++    assert "東京 uses JST" in result and "JST is UTC+9" in result
+diff --git a/tests/ingestion_safeguards/test_mcp_admission.py b/tests/ingestion_safeguards/test_mcp_admission.py
+new file mode 100644
+index 00000000..1f8c0e20
+--- /dev/null
++++ b/tests/ingestion_safeguards/test_mcp_admission.py
+@@ -0,0 +1,141 @@
++"""Exercise the real exec-loaded handlers without starting an MCP transport."""
++
++import hashlib
++import json
++import logging
++from datetime import datetime
++from pathlib import Path
++from types import SimpleNamespace
++from typing import Optional
++
++import pytest
++
++from mempalace.config import sanitize_content, sanitize_name, strip_lone_surrogates
++from mempalace.ids import ID_RECIPE, make_drawer_id_from_content
++from mempalace.source_identity import identity_metadata
++from test_ingestion import OPAQUE, codex_fragments
++from test_writers import writer_spies as writer_spies  # shared offline fixture
++
++
++@pytest.fixture
++def handlers(writer_spies):
++    collection, storage, embedded = writer_spies
++    events = []
++    namespace = dict(
++        __name__="mempalace.mcp_server",
++        __package__="mempalace.mcp_server",
++        Optional=Optional,
++        datetime=datetime,
++        hashlib=hashlib,
++        json=json,
++        logger=logging.getLogger("test"),
++        sanitize_content=sanitize_content,
++        sanitize_name=sanitize_name,
++        strip_lone_surrogates=strip_lone_surrogates,
++        ID_RECIPE=ID_RECIPE,
++        make_drawer_id_from_content=make_drawer_id_from_content,
++        identity_metadata=identity_metadata,
++        _config=SimpleNamespace(chunk_size=80),
++        _get_collection=lambda **kwargs: collection,
++        _safe_meta=dict,
++        _wal_log=lambda *args: events.append(args),
++        _wal_result=lambda *args: events.append(args),
++        _get_result_ids=lambda result: result["ids"],
++        _invalidate_overview_caches=lambda: None,
++        _embed_failure=lambda exc, **kwargs: {"success": False, "error": str(exc)},
++        assert_no_collisions=lambda *args: None,
++    )
++    root = Path(__file__).resolve().parents[2]
++    for fragment in ("tools_write.py", "tools_diary.py"):
++        path = root / "mempalace" / "mcp_server" / fragment
++        exec(compile(path.read_text(), str(path), "exec"), namespace)
++    namespace["_logical_drawer_record"] = lambda *args: {
++        "content": "old synthetic fact",
++        "metadata": {"source_file": "old-source"},
++        "ids": ["old"],
++    }
++    namespace["_purge_source_closets"] = lambda *args, **kwargs: events.append("purge") or 1
++    namespace["tool_check_duplicate"] = lambda content, **kwargs: (
++        events.append(("duplicate_embedding", content)) or {"is_duplicate": False}
++    )
++    return namespace, events
++
++
++@pytest.mark.parametrize("operation", ["add", "update", "diary", "checkpoint"])
++def test_mcp_writers_reject_before_wal_embedding_or_purge(handlers, writer_spies, operation):
++    namespace, events = handlers
++    _, storage, embedded = writer_spies
++    if operation == "add":
++        result = namespace["tool_add_drawer"]("synthetic", "facts", codex_fragments())
++    elif operation == "update":
++        result = namespace["tool_update_drawer"]("old", content=codex_fragments())
++    elif operation == "diary":
++        result = namespace["tool_diary_write"]("synthetic", codex_fragments())
++    else:
++        result = namespace["tool_checkpoint"](
++            [{"wing": "synthetic", "room": "facts", "content": codex_fragments()}]
++        )
++    assert not result.get("success", False)
++    assert events == [] and embedded == [] and storage.writes == [] and storage.deletes == []
++    assert "old" in storage.rows
++
++
++@pytest.mark.parametrize("operation", ["add", "diary"])
++def test_mcp_selected_evidence_and_metadata_remain_aligned(handlers, writer_spies, operation):
++    namespace, events = handlers
++    _, storage, embedded = writer_spies
++    text = json.dumps(
++        {"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": OPAQUE}}
++    )
++    if operation == "add":
++        result = namespace["tool_add_drawer"](
++            "synthetic", "facts", text, source_file="synthetic.json"
++        )
++    else:
++        result = namespace["tool_diary_write"]("synthetic", text)
++    assert result["success"]
++    assert "missing synthetic header" in "".join(embedded) and OPAQUE not in "".join(embedded)
++    assert OPAQUE not in repr(events)
++    assert all(
++        meta["ingestion_decision"] == "sanitize"
++        for write in storage.writes
++        for meta in write["metadatas"]
++    )
++
++
++def test_sanitized_add_remains_idempotent(handlers, writer_spies):
++    namespace, _ = handlers
++    _, storage, embedded = writer_spies
++    text = '{"stderr":"ERROR: missing dependency","rawOutput":{"base64":"' + OPAQUE + '"}}'
++    first = namespace["tool_add_drawer"]("synthetic", "facts", text)
++    writes, inputs = len(storage.writes), list(embedded)
++    second = namespace["tool_add_drawer"]("synthetic", "facts", text)
++    assert first["success"] and second["reason"] == "already_exists"
++    assert first["drawer_id"] == second["drawer_id"]
++    assert len(storage.writes) == writes and embedded == inputs
++
++
++def test_update_with_sanitized_content_preserves_row_alignment(handlers, writer_spies):
++    namespace, _ = handlers
++    _, storage, embedded = writer_spies
++    namespace["_config"].chunk_size = 20
++    text = '{"stderr":"ERROR: missing dependency","rawOutput":{"base64":"' + OPAQUE + '"}}'
++    result = namespace["tool_update_drawer"]("old", content=text)
++    assert result["success"] and result["chunks"] > 1
++    assert OPAQUE not in "".join(embedded) and "missing dependency" in "".join(embedded)
++    assert "old" not in storage.rows and len(storage.rows) == result["chunks"]
++
++
++def test_metadata_update_of_legacy_opaque_content_requires_explicit_replacement(
++    handlers, writer_spies
++):
++    namespace, events = handlers
++    _, storage, embedded = writer_spies
++    namespace["_logical_drawer_record"] = lambda *args: {
++        "content": codex_fragments(),
++        "metadata": {"source_file": "old-source"},
++        "ids": ["old"],
++    }
++    result = namespace["tool_update_drawer"]("old", wing="synthetic")
++    assert result == {"success": False, "error": "existing_content_requires_review"}
++    assert events == [] and embedded == [] and storage.deletes == [] and "old" in storage.rows
+diff --git a/tests/ingestion_safeguards/test_review_fixes.py b/tests/ingestion_safeguards/test_review_fixes.py
+new file mode 100644
+index 00000000..0a33326f
+--- /dev/null
++++ b/tests/ingestion_safeguards/test_review_fixes.py
+@@ -0,0 +1,299 @@
++"""Content preservation controls using synthetic input and offline writer spies."""
++
++import json
++
++import pytest
++
++from mempalace import convo_miner, miner
++from mempalace.ingestion import admit_text, indexing_text
++from mempalace.normalize import _format_tool_result, normalize, normalize_conversations
++from test_ingestion import OPAQUE, claude_tool_transcript, opaque_line
++from test_writers import writer_spies as writer_spies
++
++
++MARKER = "[ingestion omitted: opaque_transport; count=1]"
++LITERALS = [
++    f"Document this exact token: {MARKER}",
++    f'```python\nannotation = "{MARKER}"\n```',
++    json.dumps({"annotation": MARKER}),
++    MARKER,
++    f"\ue000 {MARKER} \U000f0000 [ingestion omitted: tool_total_bytes]",
++]
++
++
++@pytest.mark.parametrize("content", LITERALS, ids=["prose", "fenced", "config", "only", "unicode"])
++def test_literal_omission_markers_remain_indexable_content(tmp_path, content):
++    result = admit_text(content, spellcheck=False)
++    assert result.decision == "keep" and result.omissions == {}
++    assert indexing_text(result.text) == content
++    assert result.indexable
++    assert "\n\n".join(result.require_conversations()) == content
++    source = tmp_path / "literal.txt"
++    source.write_text(content, encoding="utf-8")
++    assert normalize(str(source)) == content
++    assert normalize_conversations(str(source)) == [content]
++
++
++def test_identical_literal_and_real_omission_have_separate_provenance():
++    source = json.dumps({"message": MARKER, "rawOutput": {"base64": OPAQUE}})
++    result = admit_text(source, spellcheck=False)
++    assert result.decision == "sanitize" and result.omissions == {"opaque_transport": 1}
++    assert json.loads(indexing_text(result.text)) == {"message": MARKER}
++    assert result.text.count(MARKER) == 1
++    assert json.loads(result.metadata()["ingestion_omissions"]) == {"opaque_transport": 1}
++
++
++def test_selected_tool_blocks_survive_normalizer_joins_and_merges(tmp_path):
++    output = [
++        {"type": "text", "text": f"The literal token is {MARKER}"},
++        {
++            "type": "text",
++            "text": json.dumps({"stderr": "Useful failure", "rawOutput": {"base64": OPAQUE}}),
++        },
++    ]
++    source = claude_tool_transcript(output)
++    result = admit_text(source, spellcheck=False)
++    selected = "\n\n".join(result.require_conversations())
++    assert selected.count(MARKER) == 1
++    assert "Useful failure" in selected and OPAQUE not in selected
++    assert "[ingestion omitted:" not in selected.replace(MARKER, "")
++    assert result.omissions["opaque_transport"] == 1
++    assert result.omissions["typed_nontext"] == 2
++    path = tmp_path / "session.jsonl"
++    path.write_text(source, encoding="utf-8")
++    displayed = normalize_conversations(str(path))
++    assert isinstance(displayed, list) and all(isinstance(item, str) for item in displayed)
++    assert MARKER in displayed[0] and "Useful failure" in displayed[0]
++    assert "ingestion omitted" in normalize(str(path))
++
++
++@pytest.mark.parametrize("width", [220, 377, 479])
++def test_tool_byte_caps_preserve_retained_literals_without_annotation_fragments(width):
++    output = MARKER + "\n" + "\n".join(["証拠 " + "界" * 600] * 7 + ["Evidence " + "x" * width])
++    result = admit_text(claude_tool_transcript(output), spellcheck=False)
++    selected = indexing_text(result.text)
++    assert selected.count(MARKER) == 1
++    assert "[ingestion omitted:" not in selected.replace(MARKER, "")
++    tool_text = selected[selected.index("→ ") :]
++    assert len(tool_text.encode("utf-8")) <= 2048
++    assert all(len(line.encode("utf-8")) <= 512 for line in tool_text.splitlines())
++    assert "\ufffd" not in selected
++    assert result.omissions["tool_line_bytes"] > 0
++    assert result.omissions["tool_total_bytes"] > 0
++
++
++@pytest.mark.parametrize("writer", ["live", "manual", "project"])
++@pytest.mark.parametrize("content", LITERALS[:4], ids=["prose", "fenced", "config", "only"])
++def test_writers_preserve_literal_documents_and_admission_metadata(
++    tmp_path, writer_spies, writer, content
++):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "example.md"
++    source.write_text(content, encoding="utf-8")
++    if writer == "live":
++        result = convo_miner.file_conversation_exchange(
++            collection,
++            wing="synthetic",
++            room="facts",
++            text=content,
++            source_file=str(source),
++            agent="test",
++        )
++    elif writer == "manual":
++        result = miner.add_drawer(collection, "synthetic", "facts", content, str(source), 0, "test")
++    else:
++        result = miner.process_file(
++            source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++        )
++        assert result[0] > 0 and result[2] is None
++    assert result
++    assert embedded == [content]
++    assert [doc for write in storage.writes for doc in write["documents"]] == [content]
++    metadata = storage.writes[0]["metadatas"][0]
++    assert metadata["source_file"] == str(source)
++    assert metadata["ingestion_decision"] == "keep"
++    assert json.loads(metadata["ingestion_omissions"]) == {}
++
++
++@pytest.mark.parametrize("writer", ["live", "manual", "project", "conversation"])
++def test_writers_preserve_mixed_literal_and_omission_metadata(tmp_path, writer_spies, writer):
++    collection, storage, embedded = writer_spies
++    text = json.dumps({"message": MARKER, "rawOutput": {"base64": OPAQUE}})
++    source = tmp_path / "mixed.json"
++    source.write_text(text, encoding="utf-8")
++    if writer == "live":
++        assert convo_miner.file_conversation_exchange(
++            collection,
++            wing="synthetic",
++            room="facts",
++            text=text,
++            source_file=str(source),
++            agent="test",
++        )
++    elif writer == "manual":
++        assert miner.add_drawer(collection, "synthetic", "facts", text, str(source), 0, "test")
++    elif writer == "project":
++        result = miner.process_file(
++            source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++        )
++        assert result[0] > 0 and result[2] is None
++    else:
++        metadata = {}
++        conversations = convo_miner._normalize_convo_conversations(
++            source, str(source), collection, "synthetic", "test", "exchange", False, metadata
++        )
++        assert conversations
++        chunks = convo_miner.chunk_exchanges(
++            "\n\n".join(conversations), chunk_size=120, min_chunk_size=1
++        )
++        result = convo_miner._file_chunks_locked(
++            collection,
++            str(source),
++            chunks,
++            "synthetic",
++            "facts",
++            "test",
++            "exchange",
++            admission_metadata=metadata,
++        )
++        assert result[0] > 0 and result[2] is False
++    documents = [doc for write in storage.writes for doc in write["documents"]]
++    assert embedded == documents == [json.dumps({"message": MARKER}, separators=(",", ":"))]
++    assert OPAQUE not in "\n".join(documents)
++    for write in storage.writes:
++        for metadata in write["metadatas"]:
++            assert metadata["source_file"] == str(source)
++            assert metadata["ingestion_decision"] == "sanitize"
++            assert json.loads(metadata["ingestion_omissions"]) == {"opaque_transport": 1}
++
++
++SOURCE_LITERALS = [
++    '[{"type":"thinking","thinking":\'documented fixture\',"enabled":true,"optional":null}];',
++    '[{"type":"thinking",thinking:\'documented fixture\',enabled:true,optional:null,}];',
++    '[\n {"rawOutput": "documented API field"}\n];',
++    '[\n {"type": "thinking", "thinking": "documented fixture"}\n];',
++    '[\n {"rawOutput": "documented API field",},\n]',
++    '[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];',
++    '[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];',
++    '[\n {"rawOutput": "documented API field", "enabled": True},\n]',
++    '[\n {"type": "thinking", "thinking": \'documented fixture\'},\n]',
++    '[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];',
++    '[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]',
++    '[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];',
++    '[\n {"names": ["rawOutput", "thinking", "bytes"], "enabled": False},\n]',
++    '```javascript\n[\n {"type": "thinking", "thinking": "documented fixture"}\n];\n```',
++]
++
++
++@pytest.mark.parametrize("content", SOURCE_LITERALS)
++def test_source_literals_with_transport_field_names_are_preserved(tmp_path, content):
++    result = admit_text(content, spellcheck=False)
++    assert result.decision == "keep" and result.indexable
++    assert result.text == content and result.omissions == {}
++    source = tmp_path / "example.js"
++    source.write_text(content, encoding="utf-8")
++    assert normalize_conversations(str(source)) == [content]
++    assert normalize(str(source)) == content
++    assert _format_tool_result(content, "Unknown") == "→ " + content
++
++
++@pytest.mark.parametrize("content", SOURCE_LITERALS)
++def test_project_writer_preserves_source_literals_with_transport_names(
++    tmp_path, writer_spies, content
++):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "example.js"
++    source.write_text(content, encoding="utf-8")
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] > 0 and result[2] is None
++    assert embedded == [content]
++    assert storage.writes[0]["documents"] == [content]
++    metadata = storage.writes[0]["metadatas"][0]
++    assert metadata["source_file"] == str(source)
++    assert metadata["line_start"] == 1
++    assert metadata["ingestion_decision"] == "keep"
++    assert json.loads(metadata["ingestion_omissions"]) == {}
++
++
++MALFORMED_TRANSPORT = [
++    '{"rawOutput":{"bytes":[91 92]}}',
++    '{"rawOutput":{"base64":"' + OPAQUE,
++    '{"rawOutput":{"format":"binary","bytes":[91,92',
++    '{"rawOutput":[91,92',
++    '{"rawOutput":{"bytes":[91,,92]}}',
++    '{"rawOutput":"' + opaque_line(),
++    '{"type":"Buffer","data":[91,92',
++    '{"encoding":"base64","data":"' + OPAQUE,
++    '{"type":"thinking","thinking":"' + OPAQUE,
++    '{"type":"input_image","source":{"data":"' + OPAQUE,
++]
++
++
++@pytest.mark.parametrize("content", MALFORMED_TRANSPORT)
++def test_malformed_typed_transport_remains_nonindexable(content):
++    result = admit_text(content, spellcheck=False)
++    assert not result.indexable and not result.text
++    assert result.omissions["malformed_transport"] == 1
++    assert _format_tool_result(content, "Unknown") == ""
++
++
++@pytest.mark.parametrize("content", MALFORMED_TRANSPORT)
++def test_project_writer_refuses_malformed_transport_before_mutation(
++    tmp_path, writer_spies, content
++):
++    collection, storage, embedded = writer_spies
++    before = dict(storage.rows)
++    source = tmp_path / "transport.js"
++    source.write_text(content, encoding="utf-8")
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] == 0 and result[2] == "admission_rejected"
++    assert storage.rows == before
++    assert storage.writes == storage.deletes == embedded == []
++
++
++INCOMPLETE_TRANSCRIPTS = [
++    pytest.param(
++        '{"type":"response_item","payload":{"type":"reasoning","encrypted_content":"'
++        + OPAQUE
++        + '"}}',
++        id="codex",
++    ),
++    pytest.param('{"type":"user","message":{"content":"Only one turn"}}', id="claude-code"),
++    pytest.param('{"chat_messages":[{"sender":"human","text":"Only one turn"}]}', id="claude-ai"),
++    pytest.param(
++        '{"mapping":{"one":{"parent":null,"children":[],"message":{"author":{"role":"user"},"content":{"parts":["Only one turn"]}}}}}',
++        id="chatgpt",
++    ),
++    pytest.param(
++        '{"contents":[{"role":"user","parts":[{"text":"Only one turn"}]}]}', id="gemini-json"
++    ),
++    pytest.param('{"type":"session_metadata","sessionId":"synthetic"}', id="gemini-jsonl"),
++    pytest.param('{"type":"session","version":3,"id":"synthetic"}', id="pi"),
++    pytest.param('{"history":[{"role":"user","content":"Only one turn"}]}', id="continue"),
++    pytest.param('[{"type":"message","user":"U1","text":"Only one turn"}]', id="slack"),
++]
++
++
++@pytest.mark.parametrize("content", INCOMPLETE_TRANSCRIPTS)
++@pytest.mark.parametrize("broken_tail", ["", '\n{"unfinished":'])
++def test_supported_incomplete_transcript_families_still_refuse_raw_fallback(
++    tmp_path, writer_spies, content, broken_tail
++):
++    collection, storage, embedded = writer_spies
++    text = content + broken_tail
++    admission = admit_text(text, spellcheck=False)
++    assert not admission.indexable and not admission.text
++    source = tmp_path / "session.js"
++    source.write_text(text, encoding="utf-8")
++    with pytest.raises(ValueError):
++        normalize_conversations(str(source))
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] == 0 and result[2] == "admission_rejected"
++    assert storage.writes == storage.deletes == embedded == []
++    assert "old" in storage.rows
+diff --git a/tests/ingestion_safeguards/test_shadow_audit.py b/tests/ingestion_safeguards/test_shadow_audit.py
+new file mode 100644
+index 00000000..06b36ca0
+--- /dev/null
++++ b/tests/ingestion_safeguards/test_shadow_audit.py
+@@ -0,0 +1,60 @@
++import hashlib
++import json
++from pathlib import Path
++import subprocess
++import sys
++
++from test_ingestion import OPAQUE, canonical_codex, codex_fragments
++
++
++def test_shadow_cli_classifies_without_palace_imports_or_payload_output(tmp_path):
++    samples = {
++        "facts.json": '{"bytes":[1,2,3],"fact":"東京 uses JST"}',
++        "canonical.jsonl": canonical_codex(),
++        "fragment.jsonl": codex_fragments(),
++        "unsupported.json": json.dumps(json.dumps(canonical_codex())),
++    }
++    paths = []
++    for name, content in samples.items():
++        path = tmp_path / name
++        path.write_text(content)
++        paths.append(str(path))
++    before = {path: hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in paths}
++    # Running the module is the real public CLI. Fail if it imports storage,
++    # configuration, or embedding code, even if no connection was attempted.
++    program = (
++        "import runpy,sys; sys.argv=['audit']+sys.argv[1:]; "
++        "runpy.run_module('mempalace.ingestion_audit',run_name='__main__'); "
++        "assert not any(n in sys.modules for n in "
++        "['mempalace.palace','mempalace.embedding','mempalace.config','chromadb'])"
++    )
++    result = subprocess.run([sys.executable, "-c", program, *paths], capture_output=True, text=True)
++    assert result.returncode == 0, result.stderr
++    assert OPAQUE not in result.stdout and "東京" not in result.stdout
++    report = json.loads(result.stdout)
++    assert report["decision_counts"] == {
++        "keep": 1,
++        "sanitize": 1,
++        "archive-only": 1,
++        "unsupported": 1,
++    }
++    assert {row["source"]: row["sha256"] for row in report["files"]} == before
++    assert all(row["reason_counts"] for row in report["files"])
++    assert before == {path: hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in paths}
++
++
++def test_shadow_cli_does_not_follow_symlinks_or_print_read_errors(tmp_path):
++    source = tmp_path / "synthetic.txt"
++    source.write_text(OPAQUE)
++    link = tmp_path / "link.txt"
++    link.symlink_to(source)
++    result = subprocess.run(
++        [sys.executable, "-m", "mempalace.ingestion_audit", str(link)],
++        capture_output=True,
++        text=True,
++    )
++    assert result.returncode == 0, result.stderr
++    report = json.loads(result.stdout)
++    assert report["files"][0]["decision"] == "unsupported"
++    assert report["files"][0]["reason_counts"] == {"unreadable_source": 1}
++    assert OPAQUE not in result.stdout + result.stderr
+diff --git a/tests/ingestion_safeguards/test_writers.py b/tests/ingestion_safeguards/test_writers.py
+new file mode 100644
+index 00000000..b361f288
+--- /dev/null
++++ b/tests/ingestion_safeguards/test_writers.py
+@@ -0,0 +1,308 @@
++from contextlib import nullcontext
++
++import pytest
++
++from mempalace import convo_miner, miner
++from mempalace.backends.embedding_wrapper import EmbeddingCollection
++from test_ingestion import (
++    OPAQUE,
++    canonical_codex,
++    claude_tool_transcript,
++    codex_fragments,
++    opaque_line,
++)
++
++
++class StorageSpy:
++    upsert_merges_metadata = False
++
++    def __init__(self):
++        self.rows = {"old": ("Valuable old synthetic fact", {"source_file": "old-source"})}
++        self.writes = []
++        self.deletes = []
++
++    def get(self, **kwargs):
++        keys = [key for key in kwargs.get("ids", []) if key in self.rows]
++        return {
++            "ids": keys,
++            "documents": [self.rows[key][0] for key in keys],
++            "metadatas": [self.rows[key][1] for key in keys],
++        }
++
++    def delete(self, **kwargs):
++        self.deletes.append(kwargs)
++        if kwargs.get("ids") is not None:
++            for key in kwargs["ids"]:
++                self.rows.pop(key, None)
++        else:
++            for key, (_, meta) in list(self.rows.items()):
++                if all(meta.get(field) == value for field, value in kwargs["where"].items()):
++                    del self.rows[key]
++
++    def upsert(self, **kwargs):
++        assert (
++            len(kwargs["ids"])
++            == len(kwargs["documents"])
++            == len(kwargs["metadatas"])
++            == len(kwargs["embeddings"])
++        )
++        self.writes.append(kwargs)
++        for key, doc, meta in zip(kwargs["ids"], kwargs["documents"], kwargs["metadatas"]):
++            self.rows[key] = (doc, meta)
++
++    add = upsert
++
++
++@pytest.fixture
++def writer_spies(monkeypatch):
++    import mempalace.backends.embedding_wrapper as wrapper
++
++    storage, embedded = StorageSpy(), []
++
++    def embed(texts, **kwargs):
++        embedded.extend(texts)
++        return [[float(len(text)), 0.0] for text in texts]
++
++    monkeypatch.setattr(wrapper, "_resolve_document_embedder", lambda: object())
++    monkeypatch.setattr(wrapper, "_embed_texts", embed)
++    for module in (convo_miner, miner):
++        monkeypatch.setattr(module, "mine_lock", lambda *args: nullcontext())
++        monkeypatch.setattr(module, "file_already_mined", lambda *args, **kwargs: False)
++    monkeypatch.setattr(convo_miner, "_detect_hall_cached", lambda text: "general")
++    monkeypatch.setattr(convo_miner, "entities_metadata", lambda text: "")
++    monkeypatch.setattr(miner, "detect_hall", lambda text: "general")
++    monkeypatch.setattr(miner, "_extract_entities_for_metadata", lambda text: "")
++    monkeypatch.setattr(convo_miner, "_source_file_delete_ids", lambda *args: ["old"])
++    return EmbeddingCollection(storage), storage, embedded
++
++
++def test_unsupported_conversation_is_not_registered_as_refreshed(tmp_path, writer_spies):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "unsupported.jsonl"
++    source.write_text('{"messages":[{"role":"assistant","content":')
++    assert (
++        convo_miner._normalize_convo_conversations(
++            source,
++            str(source),
++            collection,
++            "synthetic",
++            "test",
++            "exchange",
++            False,
++        )
++        is None
++    )
++    assert storage.writes == [] and embedded == [] and "old" in storage.rows
++
++
++def test_conversation_chunk_gate_rejects_before_purge(writer_spies):
++    collection, storage, embedded = writer_spies
++    result = convo_miner._file_chunks_locked(
++        collection,
++        "synthetic.jsonl",
++        [{"content": codex_fragments(), "chunk_index": 0}],
++        "synthetic",
++        "conversations",
++        "test",
++        "exchange",
++    )
++    assert result[0] == 0 and result[2] == "admission_rejected"
++    assert storage.deletes == [] and storage.writes == [] and embedded == []
++    assert "old" in storage.rows
++
++
++def test_project_transcript_rejected_before_deletion(tmp_path, writer_spies):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "fragment.jsonl"
++    source.write_text(codex_fragments())
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] == 0 and result[2] == "admission_rejected"
++    assert storage.deletes == [] and storage.writes == [] and embedded == []
++    assert "old" in storage.rows
++
++
++def test_supported_project_transcript_is_selected_before_embedding(tmp_path, writer_spies):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "session.jsonl"
++    source.write_text(canonical_codex())
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] > 0 and result[2] is None
++    assert OPAQUE not in "\n".join(embedded) and "session_meta" not in "\n".join(embedded)
++    assert "東京 uses JST" in "\n".join(embedded)
++    assert embedded == [doc for write in storage.writes for doc in write["documents"]]
++    for write in storage.writes:
++        for meta in write["metadatas"]:
++            assert meta["source_file"] == str(source)
++            assert meta["ingestion_decision"] == "sanitize"
++            assert "line_start" not in meta and "line_end" not in meta
++
++
++def test_project_positive_config_code_and_multilingual_facts(tmp_path, writer_spies):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "config.json"
++    text = '{"bytes":[1,2,3],"encrypted_content":"documented option","facts":"東京 日本 Aotearoa"}'
++    source.write_text(text)
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] > 0 and text in "\n".join(embedded)
++    assert storage.writes[0]["metadatas"][0]["line_start"] == 1
++
++
++@pytest.mark.parametrize("writer", ["live", "manual"])
++def test_live_and_manual_drawers_cannot_bypass_admission(writer_spies, writer):
++    collection, storage, embedded = writer_spies
++    if writer == "live":
++        result = convo_miner.file_conversation_exchange(
++            collection,
++            wing="synthetic",
++            room="conversations",
++            text=codex_fragments(),
++            source_file="synthetic.jsonl",
++            agent="test",
++        )
++    else:
++        result = miner.add_drawer(
++            collection, "synthetic", "general", codex_fragments(), "synthetic.jsonl", 0, "test"
++        )
++    assert not result
++    assert embedded == [] and storage.writes == [] and storage.deletes == []
++
++
++def test_live_exchange_retains_facts_source_and_omission_metadata(writer_spies):
++    import json
++
++    collection, storage, embedded = writer_spies
++    result = convo_miner.file_conversation_exchange(
++        collection,
++        wing="synthetic",
++        room="conversations",
++        text=json.dumps(
++            {"error": "exit 2: missing header", "rawOutput": {"base64": OPAQUE, "bytes": [77, 88]}}
++        ),
++        source_file="synthetic.jsonl",
++        agent="test",
++        extra_metadata={"ingestion_decision": "keep", "source_file": "wrong"},
++    )
++    assert result and "missing header" in "\n".join(embedded) and OPAQUE not in "\n".join(embedded)
++    meta = storage.writes[0]["metadatas"][0]
++    assert meta["source_file"] == "synthetic.jsonl" and meta["ingestion_decision"] == "sanitize"
++    assert "opaque_transport" in meta["ingestion_omissions"]
++    assert "ingestion omitted" not in "\n".join(embedded)
++
++
++def test_conversation_source_is_admitted_before_opaque_spans_can_be_chunked(tmp_path, writer_spies):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "conversation.txt"
++    source.write_text(
++        "Build diagnosis: missing synthetic dependency.\n\n"
++        + opaque_line()
++        + "\n\nInstall the synthetic dependency before retrying."
++    )
++    conversations = convo_miner._normalize_convo_conversations(
++        source, str(source), collection, "synthetic", "test", "exchange", False
++    )
++    assert conversations
++    chunks = convo_miner.chunk_exchanges(
++        "\n\n".join(conversations), chunk_size=120, min_chunk_size=1
++    )
++    result = convo_miner._file_chunks_locked(
++        collection, str(source), chunks, "synthetic", "conversations", "test", "exchange"
++    )
++    assert result[0] > 0
++    assert opaque_line()[:40] not in "\n".join(embedded)
++    assert "missing synthetic dependency" in "\n".join(embedded)
++    assert all("ingestion omitted" not in doc for doc in embedded)
++
++
++def test_admitted_code_examples_are_not_reinterpreted_as_fragment_envelopes(writer_spies):
++    from mempalace.ingestion import admit_text
++
++    collection, storage, embedded = writer_spies
++    text = (
++        'Documented example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```'
++    )
++    admission = admit_text(text)
++    # A line-preserving chunker can put the JSON example in its own chunk.
++    chunks = [{"content": line, "chunk_index": i} for i, line in enumerate(text.splitlines())]
++    result = convo_miner._file_chunks_locked(
++        collection,
++        "example.md",
++        chunks,
++        "synthetic",
++        "conversations",
++        "test",
++        "exchange",
++        admission_metadata=admission.metadata(),
++    )
++    assert result[0] == len(chunks)
++    assert '"type":"response_item"' in "\n".join(embedded)
++
++
++def test_conversation_source_provenance_survives_chunking(tmp_path, writer_spies):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "claude.jsonl"
++    source.write_text(
++        claude_tool_transcript(
++            '{"stderr":"missing dependency","rawOutput":{"base64":"' + OPAQUE + '"}}'
++        )
++    )
++    metadata = {}
++    conversations = convo_miner._normalize_convo_conversations(
++        source, str(source), collection, "synthetic", "test", "exchange", False, metadata
++    )
++    chunks = convo_miner.chunk_exchanges(
++        "\n\n".join(conversations), chunk_size=120, min_chunk_size=1
++    )
++    result = convo_miner._file_chunks_locked(
++        collection,
++        str(source),
++        chunks,
++        "synthetic",
++        "conversations",
++        "test",
++        "exchange",
++        admission_metadata=metadata,
++    )
++    assert result[0] > 0 and OPAQUE not in "\n".join(embedded)
++    for write in storage.writes:
++        for meta in write["metadatas"]:
++            assert "opaque_transport" in meta["ingestion_omissions"]
++            assert meta["ingestion_decision"] == "sanitize" and meta["source_file"] == str(source)
++
++
++@pytest.mark.parametrize(
++    "chunks",
++    [
++        [],
++        [
++            {"content": "A valuable synthetic fact.", "chunk_index": 0},
++            {"content": codex_fragments(), "chunk_index": 1},
++        ],
++    ],
++)
++def test_empty_or_partially_rejected_replacement_preserves_existing_rows(writer_spies, chunks):
++    collection, storage, embedded = writer_spies
++    before = dict(storage.rows)
++    result = convo_miner._file_chunks_locked(
++        collection, "source.jsonl", chunks, "synthetic", "conversations", "test", "exchange"
++    )
++    assert result[2] == "admission_rejected" and result[0] == 0
++    assert storage.rows == before and storage.deletes == [] and embedded == []
++
++
++def test_project_source_code_hashes_and_multilingual_facts_survive_embedding(
++    tmp_path, writer_spies
++):
++    collection, storage, embedded = writer_spies
++    source = tmp_path / "example.py"
++    text = 'def encrypted_content():\n    return "東京 uses JST"\n# ID: ' + "a" * 64
++    source.write_text(text)
++    result = miner.process_file(
++        source, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] > 0 and "\n".join(embedded) == text
+diff --git a/tests/test_convo_miner_unit.py b/tests/test_convo_miner_unit.py
+index 115d5a91..35085d6e 100644
+--- a/tests/test_convo_miner_unit.py
++++ b/tests/test_convo_miner_unit.py
+@@ -1124,7 +1124,10 @@ def test_mine_convos_passes_the_directory_it_read_from(tmp_path, monkeypatch):
+     transcript.write_text(
+         '{"type":"user","message":{"role":"user","content":"'
+         + "a conversation long enough to file a drawer " * 6
+-        + '"},"timestamp":"2026-04-13T10:00:00Z","uuid":"u1","sessionId":"s1"}\n',
++        + '"},"timestamp":"2026-04-13T10:00:00Z","uuid":"u1","sessionId":"s1"}\n'
++        # This wiring test needs a supported complete session. The previous
++        # one-turn fixture only reached storage through raw-envelope fallback.
++        + '{"type":"assistant","message":{"role":"assistant","content":"I will preserve the directory identity."},"timestamp":"2026-04-13T10:00:01Z","uuid":"a1","sessionId":"s1"}\n',
+         encoding="utf-8",
+     )
+ 
+diff --git a/tests/test_normalize.py b/tests/test_normalize.py
+index 3336e0d4..b5b61a81 100644
+--- a/tests/test_normalize.py
++++ b/tests/test_normalize.py
+@@ -2,6 +2,9 @@ import json
+ import stat
+ from unittest.mock import patch
+ 
++import pytest
++
++from mempalace.ingestion import MAX_SOURCE_BYTES, TOOL_LINE_BYTES, NonIndexableContentError
+ from mempalace.normalize import (
+     _SLACK_PROVENANCE_FOOTER,
+     _extract_content,
+@@ -250,7 +253,7 @@ def test_format_tool_result_bash_head_tail():
+     assert "line 19" in result
+     assert "line 40" in result
+     assert "line 59" in result
+-    assert "20 lines omitted" in result
++    assert "[ingestion omitted: tool_lines; count=20]" in result
+     # Lines 20-39 should be gone
+     assert "line 20\n" not in result
+ 
+@@ -298,7 +301,7 @@ def test_format_tool_result_grep_caps_at_20():
+     result = _format_tool_result(content, "Grep")
+     assert "match_19.py" in result
+     assert "match_20.py" not in result
+-    assert "10 more matches" in result
++    assert "[ingestion omitted: tool_lines; count=10]" in result
+ 
+ 
+ def test_format_tool_result_glob_caps_at_20():
+@@ -308,7 +311,7 @@ def test_format_tool_result_glob_caps_at_20():
+     result = _format_tool_result(content, "Glob")
+     assert "file_19.py" in result
+     assert "file_20.py" not in result
+-    assert "5 more matches" in result
++    assert "[ingestion omitted: tool_lines; count=5]" in result
+ 
+ 
+ def test_format_tool_result_unknown_short():
+@@ -318,11 +321,11 @@ def test_format_tool_result_unknown_short():
+ 
+ 
+ def test_format_tool_result_unknown_truncates():
+-    """Unknown tool output over 2KB is truncated."""
++    """A long unknown-tool line obeys the UTF-8 byte cap with provenance."""
+     content = "x" * 3000
+     result = _format_tool_result(content, "SomeTool")
+-    assert result.endswith("... [truncated, 3000 chars]")
+-    assert len(result) < 2200
++    assert "[ingestion omitted: tool_line_bytes]" in result
++    assert len(result.encode("utf-8")) <= TOOL_LINE_BYTES
+ 
+ 
+ def test_format_tool_result_list_content():
+@@ -367,6 +370,10 @@ def test_claude_code_jsonl_too_few_messages():
+     lines = [json.dumps({"type": "human", "message": {"content": "only one"}})]
+     result = _try_claude_code_jsonl("\n".join(lines))
+     assert result is None
++    # The parser's long-standing two-turn requirement must not fall through
++    # to indexing the raw envelope. A later complete session remains retryable.
++    with pytest.raises(NonIndexableContentError, match="unsupported_or_incomplete_transcript"):
++        _try_normalize_json_split("\n".join(lines))
+ 
+ 
+ def test_claude_code_jsonl_invalid_json_lines():
+@@ -1176,17 +1183,16 @@ def test_chatgpt_export_array_yields_none_when_every_conversation_is_empty():
+ 
+ 
+ def test_chatgpt_export_array_survives_malformed_mappings():
+-    """Arrays are now fed element-wise to the parser, so it must not raise.
++    """Unrelated mappings decline safely; recognizable chat envelopes refuse.
+ 
+-    Any JSON array under the mined tree reaches this parser (an ES mapping
+-    dump, a DB field map), and a raised exception would abort the whole
+-    `mine --mode convos` run, since convo_miner only catches OSError/ValueError.
++    Arbitrary arrays (ES mappings, DB field maps) still fall through as data.
++    The schema parser returns None, but dispatch raises the ValueError-derived
++    admission refusal for a recognizable malformed ChatGPT transcript.
+     """
+     malformed = [
+         [{"mapping": [1, 2, 3]}],
+         [{"mapping": "oops"}],
+         [{"mapping": {"a": "not-a-dict"}}],
+-        [{"mapping": {"r": {"parent": None, "message": {"author": None}, "children": []}}}],
+         [{"mapping": {"r": {"parent": None, "message": "text", "children": []}}}],
+         [{"mapping": {"r": {"parent": None, "message": None, "children": "nope"}}}],
+         [{"name": "users", "mapping": {"uid": "int", "email": "str"}}],
+@@ -1222,6 +1228,11 @@ def test_chatgpt_export_array_survives_malformed_mappings():
+         assert _try_chatgpt_export_json_split(payload) is None
+         assert _try_normalize_json_split(json.dumps(payload)) is None
+ 
++    recognized = [{"mapping": {"r": {"parent": None, "message": {"author": None}, "children": []}}}]
++    assert _try_chatgpt_export_json_split(recognized) is None
++    with pytest.raises(NonIndexableContentError, match="unsupported_or_incomplete_transcript"):
++        _try_normalize_json_split(json.dumps(recognized))
++
+ 
+ def test_chatgpt_json_string_parts_are_not_split_into_characters():
+     """`parts` must be a list; a bare string would be iterated character-wise."""
+@@ -1444,7 +1455,7 @@ def test_continue_json_with_tool_messages():
+     assert result is not None
+     assert "> List files" in result
+     assert "Let me check." in result
+-    assert "[tool] file1.py" in result
++    assert "[tool] → file1.py" in result
+     assert "I found two files." in result
+ 
+ 
+@@ -1894,7 +1905,7 @@ def test_claude_code_jsonl_thinking_blocks_ignored():
+ 
+ 
+ def test_normalize_rejects_large_file(tmp_path):
+-    """Files over the 500 MB safety limit raise IOError instead of being read.
++    """Files over the admission byte budget are refused before being read.
+ 
+     Size is checked via ``os.fstat`` on the already-open descriptor (no TOCTOU
+     gap), so we stub fstat to report a huge regular file rather than mocking the
+@@ -1905,14 +1916,12 @@ def test_normalize_rejects_large_file(tmp_path):
+ 
+     class _HugeStat:
+         st_mode = stat.S_IFREG | 0o644
+-        st_size = 600 * 1024 * 1024
++        st_size = MAX_SOURCE_BYTES + 1
+ 
+     with patch("mempalace.normalize.os.fstat", return_value=_HugeStat()):
+-        try:
++        with pytest.raises(NonIndexableContentError, match="source_byte_budget") as exc:
+             normalize(str(big))
+-            assert False, "Should have raised IOError"
+-        except IOError as e:
+-            assert "too large" in str(e).lower()
++        assert exc.value.decision == "unsupported"
+ 
+ 
+ # ── strip_noise() — verbatim-safety boundary tests ─────────────────────
+diff --git a/tests/ingestion_safeguards/test_review_second_fixes.py b/tests/ingestion_safeguards/test_review_second_fixes.py
+new file mode 100644
+index 00000000..c10f72d5
+--- /dev/null
++++ b/tests/ingestion_safeguards/test_review_second_fixes.py
+@@ -0,0 +1,239 @@
++"""Second review controls: synthetic source only, with bounded malicious probes."""
++
++import ast
++import json
++import subprocess
++import sys
++import textwrap
++
++import pytest
++
++from mempalace import miner
++from mempalace.ingestion import _LITERAL_TOKENS, _complete_source_literal, admit_text
++from mempalace.normalize import _format_tool_result, normalize, normalize_conversations
++from test_writers import writer_spies as writer_spies
++
++
++TRANSPORT_LITERAL = '{"rawOutput":{"base64":0}}'
++UNTERMINATED_LEXEMES = [
++    pytest.param("/*a" * 64, id="repeated-block-starts"),
++    pytest.param("/*/", id="overlapping-block-delimiters"),
++    pytest.param('"' + r"a\"/*" * 64, id="escaped-double-quotes"),
++    pytest.param("'" + r"a\'/*" * 64, id="escaped-single-quotes"),
++    pytest.param('"unclosed\\', id="double-trailing-backslash"),
++    pytest.param("'unclosed\\", id="single-trailing-backslash"),
++]
++
++
++@pytest.mark.parametrize("tail", UNTERMINATED_LEXEMES)
++def test_unterminated_lexeme_consumes_one_terminal_token(tail):
++    source = TRANSPORT_LITERAL + tail
++    tokens = _LITERAL_TOKENS.findall(source)
++    assert "".join(tokens) == source
++    assert tokens[-1] == tail, "An unterminated lexeme must not retry on its inner starts"
++    assert tokens == _LITERAL_TOKENS.findall(TRANSPORT_LITERAL) + [tail]
++
++
++@pytest.mark.parametrize("tail", UNTERMINATED_LEXEMES)
++def test_unterminated_lexemes_refuse_typed_transport(tail):
++    source = TRANSPORT_LITERAL + tail
++    assert not _complete_source_literal(source)
++    admission = admit_text(source, spellcheck=False)
++    assert not admission.indexable and admission.text == ""
++    assert admission.omissions == {"malformed_transport": 1}
++
++
++@pytest.mark.parametrize("repetitions", [32, 128, 512])
++def test_repeated_block_starts_stay_one_lexeme_at_each_size(repetitions):
++    comment = "/*a" * repetitions
++    assert _LITERAL_TOKENS.findall(comment) == [comment]
++    assert _LITERAL_TOKENS.findall(comment + "*/") == [comment + "*/"]
++    assert not _complete_source_literal(TRANSPORT_LITERAL + comment)
++    assert _complete_source_literal(TRANSPORT_LITERAL + comment + "*/")
++
++
++@pytest.mark.parametrize(
++    "source",
++    [
++        TRANSPORT_LITERAL + "/**/",
++        TRANSPORT_LITERAL + "/* multiple /* inner starts /* are comment text */;",
++        TRANSPORT_LITERAL + '// a complete line comment with /* and "\n',
++        '[{"rawOutput":{"base64":\'literal \\\' /* and # text\'}}, # comment\n]',
++    ],
++)
++def test_complete_comments_and_quoted_delimiters_keep_source(source):
++    assert _complete_source_literal(source)
++    admission = admit_text(source, spellcheck=False)
++    assert admission.decision == "keep" and admission.indexable
++    assert admission.text == source and admission.omissions == {}
++
++
++def test_repeated_unterminated_comment_repro_has_finite_resource_budget():
++    probe = textwrap.dedent(
++        """\
++        import json
++        import resource
++        import signal
++        import socket
++        import time
++
++        resource.setrlimit(resource.RLIMIT_CPU, (3, 4))
++        resource.setrlimit(resource.RLIMIT_AS, (256 * 1024**2, 256 * 1024**2))
++        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
++        signal.alarm(6)
++
++        def forbidden(*args, **kwargs):
++            raise AssertionError("Network boundary reached in synthetic probe")
++
++        socket.socket.connect = socket.socket.connect_ex = forbidden
++        socket.getaddrinfo = socket.create_connection = forbidden
++
++        from mempalace.ingestion import admit_text
++
++        source = '{"rawOutput":{"base64":0}}' + '/*a' * 12000
++        started = time.monotonic()
++        result = admit_text(source, spellcheck=False)
++        print(json.dumps({"source_bytes": len(source),
++                          "elapsed_seconds": time.monotonic() - started,
++                          "decision": result.decision,
++                          "omissions": result.omissions}), flush=True)
++        assert not result.indexable and result.text == ""
++        assert result.omissions == {"malformed_transport": 1}
++        """
++    )
++    completed = subprocess.run(
++        [sys.executable, "-c", probe],
++        capture_output=True,
++        text=True,
++        timeout=8,
++        check=False,
++    )
++    print(
++        json.dumps(
++            {
++                "probe_command": [sys.executable, "-c", probe],
++                "exit_status": completed.returncode,
++                "stdout": completed.stdout,
++                "stderr": completed.stderr,
++                "limits": {
++                    "cpu_soft_seconds": 3,
++                    "cpu_hard_seconds": 4,
++                    "address_space_bytes": 256 * 1024**2,
++                    "alarm_seconds": 6,
++                    "parent_timeout_seconds": 8,
++                },
++            }
++        )
++    )
++    assert completed.returncode == 0, "Bounded comment probe exhausted its resource budget"
++
++
++EXACT_TRIPLE_SOURCE = '[{"rawOutput": {"base64": """example " # literal"""}},]'
++_TRIPLE_BODY = "example \" and ' # literal\n/* start // literal \\n"
++PYTHON_TRIPLE_SOURCES = [pytest.param(EXACT_TRIPLE_SOURCE, id="exact-review-repro")] + [
++    pytest.param(
++        '[{"rawOutput": {"base64": ' + prefix + delimiter + _TRIPLE_BODY + delimiter + "}},]",
++        id=label,
++    )
++    for label, prefix, delimiter in [
++        ("single", "", "'''"),
++        ("raw-double", "r", '"""'),
++        ("raw-uppercase-single", "R", "'''"),
++        ("unicode-double", "u", '"""'),
++        ("bytes-single", "b", "'''"),
++        ("bytes-raw-double", "br", '"""'),
++        ("raw-bytes-single", "rb", "'''"),
++        ("uppercase-bytes-raw-double", "BR", '"""'),
++    ]
++]
++
++
++@pytest.mark.parametrize("source", PYTHON_TRIPLE_SOURCES)
++def test_valid_python_triple_literals_remain_verbatim(tmp_path, source):
++    assert isinstance(ast.literal_eval(source), list)
++    assert _complete_source_literal(source), "Valid Python strings must stay whole"
++    admission = admit_text(source, spellcheck=False)
++    assert admission.decision == "keep" and admission.indexable
++    assert admission.text == source and admission.omissions == {}
++    path = tmp_path / "example.py"
++    path.write_text(source, encoding="utf-8")
++    assert normalize(str(path)) == source
++    assert normalize_conversations(str(path)) == [source]
++    assert _format_tool_result(source, "Unknown") == "→ " + source
++
++
++@pytest.mark.parametrize("source", PYTHON_TRIPLE_SOURCES)
++def test_project_writer_preserves_python_triple_literals(tmp_path, writer_spies, source):
++    collection, storage, embedded = writer_spies
++    path = tmp_path / "example.py"
++    path.write_text(source, encoding="utf-8")
++    result = miner.process_file(
++        path, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] > 0 and result[2] is None
++    assert embedded == [source]
++    assert storage.writes[0]["documents"] == [source]
++    metadata = storage.writes[0]["metadatas"][0]
++    assert metadata["ingestion_decision"] == "keep"
++    assert json.loads(metadata["ingestion_omissions"]) == {}
++
++
++INVALID_PYTHON_LITERALS = [
++    pytest.param('"""example " # unterminated', id="open-double-triple"),
++    pytest.param("'''example ' # unterminated", id="open-single-triple"),
++    pytest.param('ur"""example " # invalid prefix"""', id="invalid-prefix"),
++    pytest.param('b"""non-ascii 界 # bytes"""', id="invalid-bytes"),
++    pytest.param('f"""example " # {review_probe()}"""', id="f-string-call"),
++    pytest.param("review_probe()", id="call-expression"),
++] + [
++    pytest.param(number, id="invalid-number-" + number)
++    for number in ("1__0", "1_", "0x__1", "0b1__0", "1_.0", "1e_2")
++]
++
++
++@pytest.mark.parametrize("value", INVALID_PYTHON_LITERALS)
++def test_invalid_python_or_executable_expressions_cannot_bypass_refusal(monkeypatch, value):
++    import builtins
++
++    def forbidden():
++        pytest.fail("Source was executed instead of parsed as a literal")
++
++    monkeypatch.setattr(builtins, "review_probe", forbidden, raising=False)
++    source = '[{"rawOutput": {"base64": ' + value + "}},]"
++    with pytest.raises((ValueError, SyntaxError)):
++        ast.literal_eval(source)
++    assert not _complete_source_literal(source)
++    admission = admit_text(source, spellcheck=False)
++    assert not admission.indexable and admission.text == ""
++    assert admission.omissions == {"malformed_transport": 1}
++    assert _format_tool_result(source, "Unknown") == ""
++
++
++@pytest.mark.parametrize(
++    "source",
++    [
++        '{"type":"response_item","payload":{"type":"reasoning",'
++        '"encrypted_content":"""example " # literal"""}}',
++        '{"messages":[{"role":"user","content":"""example " # literal"""}]}',
++        '{"type":"user","message":{"content":"""example " # literal"""}}',
++    ],
++    ids=["codex", "messages", "claude-code"],
++)
++def test_valid_python_syntax_does_not_override_supported_envelope_refusal(
++    tmp_path, writer_spies, source
++):
++    assert isinstance(ast.literal_eval(source), dict)
++    admission = admit_text(source, spellcheck=False)
++    assert not admission.indexable and admission.text == ""
++    path = tmp_path / "session.py"
++    path.write_text(source, encoding="utf-8")
++    with pytest.raises(ValueError):
++        normalize_conversations(str(path))
++    collection, storage, embedded = writer_spies
++    before = dict(storage.rows)
++    result = miner.process_file(
++        path, tmp_path, collection, "synthetic", [], "test", False, min_chunk_size=1
++    )
++    assert result[0] == 0 and result[2] == "admission_rejected"
++    assert storage.rows == before
++    assert storage.writes == storage.deletes == embedded == []

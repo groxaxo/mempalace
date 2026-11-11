@@ -1,0 +1,38 @@
+{
+  "reviewed_patch_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+  "source_fingerprint_mismatches": [],
+  "probe_scope": "synthetic inputs only; isolated subprocess per case; no source/storage/service modification; 128 MiB address-space, 4/5s CPU and 8s alarm limits; parent 12s timeout",
+  "cases": [
+    {
+      "n": 20000,
+      "input_bytes": 40029,
+      "source_byte_limit": 8388608,
+      "tool_byte_limit": 262144,
+      "address_space_limit_bytes": 134217728,
+      "outcome": "keep",
+      "elapsed_seconds": 0.0647,
+      "peak_rss_kib": 40104
+    },
+    {
+      "n": 60000,
+      "input_bytes": 120029,
+      "source_byte_limit": 8388608,
+      "tool_byte_limit": 262144,
+      "address_space_limit_bytes": 134217728,
+      "outcome": "keep",
+      "elapsed_seconds": 0.1712,
+      "peak_rss_kib": 79568
+    },
+    {
+      "n": 120000,
+      "input_bytes": 240029,
+      "source_byte_limit": 8388608,
+      "tool_byte_limit": 262144,
+      "address_space_limit_bytes": 134217728,
+      "outcome": "MemoryError escaped admit_text",
+      "elapsed_seconds": 0.2083,
+      "peak_rss_kib": 102104
+    }
+  ],
+  "parent_confirmed_blocker": true
+}

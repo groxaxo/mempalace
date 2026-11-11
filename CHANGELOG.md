@@ -8,6 +8,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Experimental deterministic transcript-admission safeguards and a read-only
+  `python -m mempalace.ingestion_audit FILE [FILE ...]` shadow classifier.
+  Covered conversation/project/live and MCP writers reject recognized opaque
+  or unsupported envelopes before their guarded write boundaries; selected
+  useful text carries primitive admission provenance metadata.
+- An isolated synthetic regression suite, runnable shadow demonstration, and
+  historical red/green verification evidence. See
+  [Ingestion safeguards](docs/ingestion-safeguards.md) for exact scope,
+  resource limits, reproducible checks, and review status.
+
+### Outstanding review blockers
+
+- The previous frozen patch failed its third independent review. The subsequent
+  correction addresses R1–R5 and has user authorization for integration into the
+  fork's `main`. A new independent final-patch/Claude approval is not claimed.
+  Deployment blockers below remain unresolved.
+
+### Fixed
+
+- Preserve literal omission-marker examples instead of stripping source text
+  by marker syntax. Generated annotations stay separate from indexable text;
+  actual omissions retain metadata through covered writers.
+- Distinguish complete source-code literals with transport-related field names
+  from malformed transcript/typed-transport envelopes. Add positive source
+  controls and fail-closed transport controls, with review-fix red/green evidence.
+- Bound tokenizer work for repeated unterminated comments/quotes; retain a
+  resource-limited CPU-exhaustion regression instead of raising timeouts.
+- Preserve complete Python triple-quoted source literals containing quote and
+  comment delimiters without executing or rewriting source text.
+- Bound serialized syntax before parser allocation, including flat containers;
+  parse only the transformed literal candidate to avoid comment/operator
+  ambiguity. Recognize truncated envelopes through lexical structure and late
+  fields, retaining repeated-field evidence and existing message aliases.
+- Preserve JavaScript Unicode identifiers/templates and literal Markdown data
+  inside fences whose delimiters or lengths differ from nested runs.
+- Keep fork `main` updates from publishing Docker release images. Linux resource
+  probes are explicitly skipped where their resource-limit APIs are unavailable;
+  the portable preservation and writer tests remain enabled.
+
+### Safety notes
+
+- Review branch only, based on upstream **3.11.0**, not a production release.
+  Admission is active when the modified writers are called; the audit command
+  does not make those writers run in shadow mode.
+- Some writer routes remain ungated, and accepted replacements still have a
+  delete-before-write failure risk. No deployment, automatic reingestion,
+  historical cleanup, or retrieval-threshold change is approved by this work.
+
 
 ---
 

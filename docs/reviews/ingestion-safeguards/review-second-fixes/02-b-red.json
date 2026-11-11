@@ -1,0 +1,23 @@
+{
+  "command": [
+    "<snapshot>/.venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/ingestion_safeguards/test_review_second_fixes.py",
+    "-k",
+    "python",
+    "-vv",
+    "--tb=short"
+  ],
+  "exact_command": "env TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 <snapshot>/.venv/bin/python -m pytest tests/ingestion_safeguards/test_review_second_fixes.py -k python -vv --tb=short",
+  "cwd": "<publication>",
+  "environment": {
+    "TZ": "UTC",
+    "TMPDIR": "<publication>/test-tmp",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "exit_status": 1,
+  "elapsed_seconds": 1.2670731699981843
+}

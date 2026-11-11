@@ -513,6 +513,13 @@ def tool_add_drawer(
     except ValueError as e:
         return {"success": False, "error": str(e)}
 
+    from ..ingestion import admit_text, indexing_text
+
+    admission = admit_text(content, source=source_file or "")
+    if not admission.indexable:
+        return admission.refusal()
+    content = indexing_text(admission.text)
+
     col = _get_collection(create=True)
     if not col:
         return _collection_error_or_no_palace()
@@ -539,6 +546,7 @@ def tool_add_drawer(
         "added_by": added_by,
         "filed_at": datetime.now().isoformat(),
         "id_recipe": ID_RECIPE,
+        **admission.metadata(),
     }
     if source_file:
         # A drawer filed here names a source file the same way a mined one
@@ -1425,6 +1433,17 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
     if content is None and wing is None and room is None:
         return {"success": True, "drawer_id": drawer_id, "noop": True}
 
+    from ..ingestion import admit_text, indexing_text
+
+    admission = None
+    if content is not None:
+        try:
+            admission = admit_text(sanitize_content(content))
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+        if not admission.indexable:
+            return admission.refusal()
+
     col = _get_collection()
     if not col:
         return _collection_error_or_no_palace()
@@ -1439,12 +1458,17 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
 
         new_doc = old_doc
         if content is not None:
-            try:
-                new_doc = sanitize_content(content)
-            except ValueError as e:
-                return {"success": False, "error": str(e)}
+            new_doc = indexing_text(admission.text)
+        else:
+            existing_admission = admit_text(old_doc)
+            if not existing_admission.indexable or existing_admission.decision != "keep":
+                # Metadata-only changes can re-embed on some backends. Require
+                # explicit reviewed replacement content for a legacy payload.
+                return {"success": False, "error": "existing_content_requires_review"}
 
         new_meta = dict(old_meta)
+        if admission is not None:
+            new_meta.update(admission.metadata())
 
         if wing is not None:
             try:

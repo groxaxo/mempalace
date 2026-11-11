@@ -1,0 +1,53 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests
+....................................F........F                           [100%]
+=================================== FAILURES ===================================
+________ test_normalizer_refuses_opaque_only_sources_and_source_budget _________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-18/test_normalizer_refuses_opaque0')
+
+    def test_normalizer_refuses_opaque_only_sources_and_source_budget(tmp_path):
+        from mempalace.ingestion import NonIndexableContentError, MAX_SOURCE_BYTES
+    
+        source = tmp_path / "opaque.txt"
+        source.write_text(opaque_line())
+>       with pytest.raises(NonIndexableContentError, match="no_useful_content"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:215: Failed
+___ test_conversation_source_is_admitted_before_opaque_spans_can_be_chunked ____
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-18/test_conversation_source_is_ad0')
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x729764a3b350>, <test_writers.StorageSpy object ...m9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DB', ...])
+
+    def test_conversation_source_is_admitted_before_opaque_spans_can_be_chunked(tmp_path, writer_spies):
+        collection, storage, embedded = writer_spies
+        source = tmp_path / "conversation.txt"
+        source.write_text("Build diagnosis: missing synthetic dependency.\n\n" + opaque_line() +
+                          "\n\nInstall the synthetic dependency before retrying.")
+        conversations = convo_miner._normalize_convo_conversations(
+            source, str(source), collection, "synthetic", "test", "exchange", False)
+        assert conversations
+        chunks = convo_miner.chunk_exchanges("\n\n".join(conversations), chunk_size=120, min_chunk_size=1)
+        result = convo_miner._file_chunks_locked(collection, str(source), chunks, "synthetic",
+                                                 "conversations", "test", "exchange")
+        assert result[0] > 0
+>       assert opaque_line()[:40] not in "\n".join(embedded)
+E       AssertionError: assert 'AAECAwQFBgc...FRYXGBkaGxwd' not in 'Build diagn...re retrying.'
+E         
+E         'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwd' is contained here:
+E           pendency.
+E           AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZ
+E         ? ++++++++++++++++++++++++++++++++++++++++
+E           WltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKz
+E           tLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwN...
+E         
+E         ...Full output truncated, use '-vv' to show
+
+tests/test_writers.py:159: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_normalizer_refuses_opaque_only_sources_and_source_budget
+FAILED tests/test_writers.py::test_conversation_source_is_admitted_before_opaque_spans_can_be_chunked
+2 failed, 44 passed in 0.93s
+
+EXIT STATUS: 1

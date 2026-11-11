@@ -1,0 +1,5 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py::test_size_omission_provenance_does_not_leave_indexable_marker_fragments
+.                                                                        [100%]
+1 passed in 0.06s
+
+EXIT STATUS: 0

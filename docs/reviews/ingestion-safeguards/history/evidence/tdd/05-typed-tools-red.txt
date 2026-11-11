@@ -1,0 +1,41 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+.........................FF.                                             [100%]
+=================================== FAILURES ===================================
+______ test_claude_unknown_tool_keeps_failure_evidence_without_transport _______
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-8/test_claude_unknown_tool_keeps0')
+
+    def test_claude_unknown_tool_keeps_failure_evidence_without_transport(tmp_path):
+        source = tmp_path / "claude.jsonl"
+        source.write_text(claude_tool_transcript(json.dumps({
+            "stderr": "ModuleNotFoundError: synthetic_dependency", "exit_code": 1,
+            "rawOutput": {"base64": OPAQUE, "bytes": [91, 92, 93]},
+            "details": {"type": "reasoning", "encrypted_content": OPAQUE},
+        })))
+        text = normalize_conversations(str(source))[0]
+>       assert OPAQUE not in text and "91,92,93" not in text.replace(" ", "")
+E       assert ('FORBIDDEN_OPAQUE_SENTINEL' not in '> Why did t...ENTINEL"}}\n'
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           base64": "FORBIDDEN_OPAQUE_SENTINEL", "bytes": [91, 92, 93]}, "details": {"type": "reasoning", "encrypted_content": "FORBIDDEN_OPAQUE_SENTINEL"}}
+E         ?           +++++++++++++++++++++++++)
+
+tests/test_ingestion.py:149: AssertionError
+_______ test_typed_opaque_only_content_does_not_make_an_omission_memory ________
+
+    def test_typed_opaque_only_content_does_not_make_an_omission_memory():
+        from mempalace.normalize import _extract_content, _format_tool_result
+    
+        raw = json.dumps({"type": "reasoning", "encrypted_content": OPAQUE})
+>       assert _extract_content(raw) == ""
+E       assert '{"type": "re...UE_SENTINEL"}' == ''
+E         
+E         + {"type": "reasoning", "encrypted_content": "FORBIDDEN_OPAQUE_SENTINEL"}
+
+tests/test_ingestion.py:158: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_claude_unknown_tool_keeps_failure_evidence_without_transport
+FAILED tests/test_ingestion.py::test_typed_opaque_only_content_does_not_make_an_omission_memory
+2 failed, 26 passed in 0.10s
+
+EXIT STATUS: 1

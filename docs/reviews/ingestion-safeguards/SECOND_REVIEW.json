@@ -1,0 +1,57 @@
+{
+  "passed": false,
+  "security_concerns": [
+    {
+      "severity": "high",
+      "location": "mempalace/ingestion.py:104-107,114-121,193",
+      "finding": "The new source-literal tokenizer permits CPU denial of service through repeated unterminated block comments. Each failed /* comment match scans the remaining suffix, and _complete_source_literal tokenizes the entire source rather than the bounded prefix.",
+      "reproduction": "admit_text('{\"rawOutput\":{\"base64\":0}}' + '/*a' * n, spellcheck=False)",
+      "evidence": "Against the final source, inputs of 3026, 6026, 12026 and 24026 bytes took 0.0610, 0.2071, 0.6802 and 1.8308 seconds respectively. A 48026-byte input was interrupted by the probe's two-second alarm. These inputs fit both the source and tool-input byte budgets.",
+      "recommendation": "Use a bounded, single-pass lexer that consumes an unterminated comment once. Enforce explicit recognition-work budgets before tokenization and return a nonindexable resource outcome when exceeded."
+    },
+    {
+      "severity": "high",
+      "location": "mempalace/ingestion.py:120-145,607-611,649-652",
+      "finding": "The new ast.literal_eval recognition path has no token/node budget before constructing an AST and materializing its containers. The source-byte limit does not prevent substantial memory amplification, and MemoryError escapes admit_text rather than producing the promised resource refusal.",
+      "reproduction": "admit_text('{\"rawOutput\":{\"base64\":\\'fixture\\'},\"values\":[' + '0,' * n + '],\"enabled\":True};', spellcheck=False)",
+      "evidence": "In a read-only subprocess with RLIMIT_AS deliberately limited to 256 MiB, the 200062-byte case reached a process peak RSS of 117180 KiB. The 500062-byte case reached 234652 KiB and raised MemoryError out of admit_text. No model, storage or network code was involved.",
+      "recommendation": "Bound literal-recognition bytes, tokens and container elements before invoking an AST parser. Prefer syntax recognition without evaluating/materializing containers; handle resource exhaustion explicitly. Catching MemoryError alone would not address the amplification."
+    }
+  ],
+  "logic_errors": [
+    {
+      "severity": "high",
+      "location": "mempalace/ingestion.py:501-541; mempalace/normalize.py:280-285",
+      "finding": "Malformed-transcript recognition omits root role/content messages, truncated ChatGPT mappings and truncated Slack messages. Recognizable incomplete envelopes consequently receive decision=keep and can reach the newly guarded writers as raw text.",
+      "reproduction": [
+        "{\"role\":\"assistant\",\"content\":\"SYNTHETIC_SENTINEL",
+        "{\"mapping\":{\"root\":{\"message\":{\"author\":{\"role\":\"assistant\"},\"content\":{\"parts\":[\"SYNTHETIC_SENTINEL",
+        "[{\"type\":\"message\",\"user\":\"U1\",\"text\":\"SYNTHETIC_SENTINEL"
+      ],
+      "evidence": "Calling admit_text(sample, spellcheck=False) for each sample returned decision=keep, indexable=true, omissions={}, and text identical to the incomplete raw envelope. The complete-value recognizer supports these structures, but its malformed-prefix counterpart does not. Existing broken-tail tests append another record after a complete recognizable object; they do not cover truncation inside the first object.",
+      "recommendation": "Extend bounded structural recognition to these supported families while preserving complete source-literal controls. Add first-record truncation tests and verify refusal before writer side effects."
+    },
+    {
+      "severity": "medium",
+      "location": "mempalace/ingestion.py:104-107,114-145,150-193",
+      "finding": "Valid Python triple-quoted literal content can still be discarded as malformed transport. The lexer recognizes only ordinary single- and double-quoted strings, allowing a comment-looking sequence inside a triple-quoted string to be stripped during the recognition probe.",
+      "reproduction": "[{\"rawOutput\": {\"base64\": \"\"\"example \" # literal\"\"\"}},]",
+      "evidence": "ast.literal_eval accepts this exact source and preserves the string value 'example \" # literal'. Against the final source, _complete_source_literal returned false and admit_text returned archive-only, indexable=false, text='', omissions={\"malformed_transport\":1}. The final JS-key/constant fix does not address this Python case.",
+      "recommendation": "Recognize Python string forms without treating characters inside them as comments. Add this preservation control alongside the malformed/incomplete transport controls rather than weakening the transport refusal."
+    },
+    {
+      "severity": "medium",
+      "location": "mempalace/normalize.py:834-849",
+      "finding": "Continue tool results are bounded before the '[tool] ' label is added. The final normalized tool segment therefore violates the declared per-line and total UTF-8 caps.",
+      "reproduction": "Admit a Continue history containing a user question, an assistant answer, and a tool result of 'x' * 600; repeat with ten newline-separated copies.",
+      "evidence": "The final normalized first tool line was 519 bytes, exceeding TOOL_LINE_BYTES=512. The multiline '[tool]' suffix occupied 2056 bytes including the transcript's final newline, exceeding TOOL_TOTAL_BYTES=2048. Omission metadata reported the byte cuts, but the later prefix was not included in those budgets.",
+      "recommendation": "Include the Continue label in the bounded tool segment or reserve its bytes before formatting. Test final normalized joins, not only _format_tool_result in isolation."
+    }
+  ],
+  "suggestions": [
+    "The static exec finding at tests/ingestion_safeguards/test_mcp_admission.py:48-51 is not a user-input execution vulnerability: the root is derived from the repository fixture path and fragment names are the fixed tools_write.py/tools_diary.py pair.",
+    "Retain the separation between selected text and generated omission annotations. Custom checks passed for all 14 current source-literal controls, five literal-marker/mixed-provenance controls, and three malformed-transport controls, including the new '[91 92]' regression case.",
+    "The existing test adaptations appropriately replace raw-envelope fallback expectations with explicit refusals. Extend their coverage with the reproductions above; resource tests currently exercise oversized inputs and deep structure but miss the new tokenizer/AST amplification paths."
+  ],
+  "summary": "FAIL: reviewed the complete updated frozen diff in bounded sections: <private-verification>/precommit-review-final.diff, 124640 bytes, SHA256 3bb5a473c089cd5fda6f0f8247b4ca8af0be3badb2711acbada2b0d938068398. Inspected surrounding normalization/writer dataflow and reproduced the reported issues using guarded, read-only custom probes with network and filesystem writes blocked. No files were created or modified. No full test suite, live transport, model, storage, authentication or production operation was run. Accepted-replacement delete-before-write and uncovered writers remain separately disclosed deployment blockers, not newly attributed findings here. This is an independent review, not the authentication-blocked Claude Sonnet 5.5 / medium review."
+}

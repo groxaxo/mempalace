@@ -1,0 +1,106 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+.................................................FFFF                    [100%]
+=================================== FAILURES ===================================
+__ test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport0] __
+
+transport = {'rawOutput': 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0x...oqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/'}
+
+    @pytest.mark.parametrize("transport", [
+        {"rawOutput": opaque_line()},
+        {"rawOutput": [11, 22, 33, 44]},
+        {"audio": {"data": OPAQUE, "format": "wav"}},
+        {"image": {"bytes": [11, 22, 33, 44], "mime_type": "image/png"}},
+    ])
+    def test_typed_raw_media_transports_keep_surrounding_tool_evidence(transport):
+        from mempalace.normalize import _format_tool_result
+    
+        result = _format_tool_result(json.dumps({"stderr": "ERROR: synthetic transport failed", **transport}), "Unknown")
+        assert "synthetic transport failed" in result
+>       assert OPAQUE not in result and opaque_line()[:60] not in result
+E       assert ('FORBIDDEN_OPAQUE_SENTINEL' not in '→ {"stderr"...j5+vv8/f7/"}'
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           5+vv8/f7/"} and 'AAECAwQFBgc...JCUmJygpKiss' not in '→ {"stderr"...j5+vv8/f7/"}'
+E         
+E         'AAECAwQFBgcICQoLDA...h8gISIjJCUmJygpKiss' is contained here:
+E           Output": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+ [ingestion omitted: tool_line_bytes] 1BRUlNUVVZXWFlaW1xdXl9gYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXp7fH1+f4CBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/"}
+E         ?           ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++)
+
+tests/test_ingestion.py:331: AssertionError
+__ test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport1] __
+
+transport = {'rawOutput': [11, 22, 33, 44]}
+
+    @pytest.mark.parametrize("transport", [
+        {"rawOutput": opaque_line()},
+        {"rawOutput": [11, 22, 33, 44]},
+        {"audio": {"data": OPAQUE, "format": "wav"}},
+        {"image": {"bytes": [11, 22, 33, 44], "mime_type": "image/png"}},
+    ])
+    def test_typed_raw_media_transports_keep_surrounding_tool_evidence(transport):
+        from mempalace.normalize import _format_tool_result
+    
+        result = _format_tool_result(json.dumps({"stderr": "ERROR: synthetic transport failed", **transport}), "Unknown")
+        assert "synthetic transport failed" in result
+        assert OPAQUE not in result and opaque_line()[:60] not in result
+>       assert "11,22,33,44" not in result.replace(" ", "")
+E       assert '11,22,33,44' not in '→{"stderr":...1,22,33,44]}'
+E         
+E         '11,22,33,44' is contained here:
+E           wOutput":[11,22,33,44]}
+
+tests/test_ingestion.py:332: AssertionError
+__ test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport2] __
+
+transport = {'audio': {'data': 'FORBIDDEN_OPAQUE_SENTINEL', 'format': 'wav'}}
+
+    @pytest.mark.parametrize("transport", [
+        {"rawOutput": opaque_line()},
+        {"rawOutput": [11, 22, 33, 44]},
+        {"audio": {"data": OPAQUE, "format": "wav"}},
+        {"image": {"bytes": [11, 22, 33, 44], "mime_type": "image/png"}},
+    ])
+    def test_typed_raw_media_transports_keep_surrounding_tool_evidence(transport):
+        from mempalace.normalize import _format_tool_result
+    
+        result = _format_tool_result(json.dumps({"stderr": "ERROR: synthetic transport failed", **transport}), "Unknown")
+        assert "synthetic transport failed" in result
+>       assert OPAQUE not in result and opaque_line()[:60] not in result
+E       assert ('FORBIDDEN_OPAQUE_SENTINEL' not in '→ {"stderr"...at": "wav"}}'
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           {"data": "FORBIDDEN_OPAQUE_SENTINEL", "format": "wav"}})
+
+tests/test_ingestion.py:331: AssertionError
+__ test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport3] __
+
+transport = {'image': {'bytes': [11, 22, 33, 44], 'mime_type': 'image/png'}}
+
+    @pytest.mark.parametrize("transport", [
+        {"rawOutput": opaque_line()},
+        {"rawOutput": [11, 22, 33, 44]},
+        {"audio": {"data": OPAQUE, "format": "wav"}},
+        {"image": {"bytes": [11, 22, 33, 44], "mime_type": "image/png"}},
+    ])
+    def test_typed_raw_media_transports_keep_surrounding_tool_evidence(transport):
+        from mempalace.normalize import _format_tool_result
+    
+        result = _format_tool_result(json.dumps({"stderr": "ERROR: synthetic transport failed", **transport}), "Unknown")
+        assert "synthetic transport failed" in result
+        assert OPAQUE not in result and opaque_line()[:60] not in result
+>       assert "11,22,33,44" not in result.replace(" ", "")
+E       assert '11,22,33,44' not in '→{"stderr":...image/png"}}'
+E         
+E         '11,22,33,44' is contained here:
+E           {"bytes":[11,22,33,44],"mime_type":"image/png"}}
+E         ?           +++++++++++
+
+tests/test_ingestion.py:332: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport0]
+FAILED tests/test_ingestion.py::test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport1]
+FAILED tests/test_ingestion.py::test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport2]
+FAILED tests/test_ingestion.py::test_typed_raw_media_transports_keep_surrounding_tool_evidence[transport3]
+4 failed, 49 passed in 0.22s
+
+EXIT STATUS: 1

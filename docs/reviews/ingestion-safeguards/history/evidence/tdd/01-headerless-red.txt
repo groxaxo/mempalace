@@ -1,0 +1,20 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py::test_headerless_codex_fragments_never_fall_back_to_raw_text
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_________ test_headerless_codex_fragments_never_fall_back_to_raw_text __________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-0/test_headerless_codex_fragment0')
+
+    def test_headerless_codex_fragments_never_fall_back_to_raw_text(tmp_path):
+        source = tmp_path / "fragment.jsonl"
+        source.write_text(codex_fragments())
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:24: Failed
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_headerless_codex_fragments_never_fall_back_to_raw_text
+1 failed in 0.04s
+
+EXIT STATUS: 1

@@ -1,0 +1,5 @@
+{
+  "command": "ruff check --no-cache .",
+  "exit_code": 0,
+  "output": "All checks passed!\n"
+}

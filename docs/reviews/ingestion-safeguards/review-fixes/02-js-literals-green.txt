@@ -1,0 +1,63 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 <snapshot>/.venv/bin/python -m pytest tests/ingestion_safeguards/test_review_fixes.py -k 'source_literals or malformed' -v --tb=short
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- <snapshot>/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: <publication>
+configfile: pyproject.toml
+plugins: anyio-4.16.0
+collecting ... collected 92 items / 44 deselected / 48 selected
+
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[{"type":"thinking","thinking":'documented fixture',"enabled":true,"optional":null}];] PASSED [  2%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[{"type":"thinking",thinking:'documented fixture',enabled:true,optional:null,}];] PASSED [  4%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field"}\n];] PASSED [  6%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": "documented fixture"}\n];] PASSED [  8%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field",},\n]] PASSED [ 10%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];] PASSED [ 12%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];] PASSED [ 14%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field", "enabled": True},\n]] PASSED [ 16%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]] PASSED [ 18%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];] PASSED [ 20%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]] PASSED [ 22%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];] PASSED [ 25%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"names": ["rawOutput", "thinking", "bytes"], "enabled": False},\n]] PASSED [ 27%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[```javascript\n[\n {"type": "thinking", "thinking": "documented fixture"}\n];\n```] PASSED [ 29%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[{"type":"thinking","thinking":'documented fixture',"enabled":true,"optional":null}];] PASSED [ 31%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[{"type":"thinking",thinking:'documented fixture',enabled:true,optional:null,}];] PASSED [ 33%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field"}\n];] PASSED [ 35%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": "documented fixture"}\n];] PASSED [ 37%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field",},\n]] PASSED [ 39%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];] PASSED [ 41%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];] PASSED [ 43%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field", "enabled": True},\n]] PASSED [ 45%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]] PASSED [ 47%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];] PASSED [ 50%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]] PASSED [ 52%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];] PASSED [ 54%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"names": ["rawOutput", "thinking", "bytes"], "enabled": False},\n]] PASSED [ 56%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[```javascript\n[\n {"type": "thinking", "thinking": "documented fixture"}\n];\n```] PASSED [ 58%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"bytes":[91 92]}}] PASSED [ 60%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"base64":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 62%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"format":"binary","bytes":[91,92] PASSED [ 64%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":[91,92] PASSED [ 66%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"bytes":[91,,92]}}] PASSED [ 68%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[content5] PASSED [ 70%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"type":"Buffer","data":[91,92] PASSED [ 72%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 75%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"type":"thinking","thinking":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 77%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"type":"input_image","source":{"data":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 79%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"bytes":[91 92]}}] PASSED [ 81%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"base64":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 83%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"format":"binary","bytes":[91,92] PASSED [ 85%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":[91,92] PASSED [ 87%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"bytes":[91,,92]}}] PASSED [ 89%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[content5] PASSED [ 91%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"type":"Buffer","data":[91,92] PASSED [ 93%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 95%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"type":"thinking","thinking":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 97%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"type":"input_image","source":{"data":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [100%]
+
+====================== 48 passed, 44 deselected in 0.24s =======================
+
+EXIT STATUS: 0

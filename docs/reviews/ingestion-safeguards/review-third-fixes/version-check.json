@@ -1,0 +1,5 @@
+{
+  "command": "<isolated-python> scripts/check_versions.py",
+  "exit_code": 0,
+  "output": "## Detected versions\n\n| Source | Version |\n| --- | --- |\n| `mempalace/version.py (__version__)` | `3.11.0` |\n| `pyproject.toml (project.version)` | `3.11.0` |\n| `.claude-plugin/marketplace.json (plugins[mempalace].version)` | `3.11.0` |\n| `.claude-plugin/plugin.json (version)` | `3.11.0` |\n| `.codex-plugin/plugin.json (version)` | `3.11.0` |\n| `.dsh-plugin/package.json (version)` | `3.11.0` |\n| `integrations/openclaw/SKILL.md (frontmatter.version)` | `3.11.0` |\n| `README.md (version-shield)` | `3.11.0` |\n| `uv.lock (mempalace (editable '.'))` | `3.11.0` |\n| `Cargo.toml (workspace.package.version)` | `3.11.0` |\n| `Cargo.lock (mempalace-cli)` | `3.11.0` |\n| `Cargo.lock (mempalace-core)` | `3.11.0` |\n| `Cargo.lock (mempalace-py)` | `3.11.0` |\n\nAll 13 version values agree.\n"
+}

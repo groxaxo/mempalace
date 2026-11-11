@@ -1,0 +1,42 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests
+................................................F.................F.     [100%]
+=================================== FAILURES ===================================
+__________ test_quote_preamble_does_not_hide_unquoted_codex_envelopes __________
+
+    def test_quote_preamble_does_not_hide_unquoted_codex_envelopes():
+        from mempalace.ingestion import admit_text
+    
+        result = admit_text("> injected one\n> injected two\n> injected three\n" + codex_fragments())
+>       assert not result.indexable and result.decision == "archive-only"
+E       assert (not True)
+E        +  where True = Admission(decision='keep', conversations=('> injected one\n> injected two\n> injected three\n{"type": "response_item",...DEN_OPAQUE_SENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}',), reasons=('plain_or_structured_text',), omissions={}, source='').indexable
+
+tests/test_ingestion.py:317: AssertionError
+___ test_admitted_code_examples_are_not_reinterpreted_as_fragment_envelopes ____
+
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x775aa0dee480>, <test_writers.StorageSpy object at 0x775aa0dee6f0>, [])
+
+    def test_admitted_code_examples_are_not_reinterpreted_as_fragment_envelopes(writer_spies):
+        from mempalace.ingestion import admit_text
+    
+        collection, storage, embedded = writer_spies
+        text = 'Documented example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```'
+        admission = admit_text(text)
+        # A line-preserving chunker can put the JSON example in its own chunk.
+        chunks = [{"content": line, "chunk_index": i} for i, line in enumerate(text.splitlines())]
+        result = convo_miner._file_chunks_locked(collection, "example.md", chunks, "synthetic",
+                                                 "conversations", "test", "exchange",
+                                                 admission_metadata=admission.metadata())
+>       assert result[0] == len(chunks)
+E       assert 0 == 4
+E        +  where 4 = len([{'content': 'Documented example:', 'chunk_index': 0}, {'content': '```json', 'chunk_index': 1}, {'content': '{"type":"response_item","payload":{"type":"reasoning"}}', 'chunk_index': 2}, {'content': '```', 'chunk_index': 3}])
+
+tests/test_writers.py:177: AssertionError
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:convo_miner.py:719 Skipping example.md: unparsed_codex
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_quote_preamble_does_not_hide_unquoted_codex_envelopes
+FAILED tests/test_writers.py::test_admitted_code_examples_are_not_reinterpreted_as_fragment_envelopes
+2 failed, 66 passed in 1.12s
+
+EXIT STATUS: 1

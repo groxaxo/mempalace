@@ -1,0 +1,7 @@
+cwd: <publication>
+$ env TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 ruff format --no-cache mempalace/ingestion.py tests/ingestion_safeguards/test_review_second_fixes.py
+
+1 file reformatted, 1 file left unchanged
+
+exit_status: 0
+elapsed_seconds: 0.016145

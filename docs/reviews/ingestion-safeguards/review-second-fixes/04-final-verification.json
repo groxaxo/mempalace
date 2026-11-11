@@ -1,0 +1,17 @@
+{
+  "command": [
+    "<snapshot>/.venv/bin/python",
+    "test-tmp/review-second-fixes/verify_final.py"
+  ],
+  "exact_command": "env TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 <snapshot>/.venv/bin/python test-tmp/review-second-fixes/verify_final.py",
+  "cwd": "<publication>",
+  "environment": {
+    "TZ": "UTC",
+    "TMPDIR": "<publication>/test-tmp",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "exit_status": 1,
+  "elapsed_seconds": 0.2647617350012297
+}

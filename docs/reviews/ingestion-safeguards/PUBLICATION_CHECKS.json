@@ -1,0 +1,278 @@
+{
+  "publication_gate": {
+    "status": "user_authorized_main_integration_pending",
+    "authorization": "Explicit user request: commit, push to main, merge and document.",
+    "current_patch_sha256": "19502332eb23d6cda362573fb3714e77aadc467eceef4c5624a478c976fc7a0c",
+    "test_result_scope": "733 selected passes; 290 safeguards and 443 affected upstream cases. Not full-suite, new independent final-patch/Claude or deployment approval.",
+    "prior_failed_reviews_are_historical": [
+      "INITIAL_REVIEW.json",
+      "SECOND_REVIEW.json",
+      "THIRD_REVIEW.json"
+    ],
+    "next_action": "Commit and push the corrected candidate, merge into fork main, and record actual remote receipt."
+  },
+  "scope": "Review-branch publication only; not production or full-suite approval. Workspace prefixes are redacted. Commands ran in the publication tree using the isolated original snapshot Python environment.",
+  "release_base_commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+  "upstream_baseline": {
+    "command": "TZ=UTC TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ANONYMIZED_TELEMETRY=False <snapshot>/.venv/bin/python -m pytest -q --maxfail=15 tests/test_normalize.py tests/test_convo_miner_unit.py tests/test_convo_miner.py tests/test_miner.py tests/test_miner_jsonl_visibility.py tests/test_convo_miner_size_cap.py tests/test_mcp_metadata_reserved_keys.py",
+    "result": {
+      "output": "........................................................................ [ 16%]\n........................................................................ [ 32%]\n........................................................................ [ 48%]\n........................................................................ [ 65%]\n........................................................................ [ 81%]\n........................................................................ [ 97%]\n...........                                                              [100%]\n443 passed in 15.67s",
+      "exit_code": 0,
+      "error": null
+    }
+  },
+  "initial_integration": {
+    "command": "TZ=UTC TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ANONYMIZED_TELEMETRY=False <snapshot>/.venv/bin/python -m pytest -q --maxfail=15 tests/ingestion_safeguards tests/test_normalize.py tests/test_convo_miner_unit.py tests/test_convo_miner.py tests/test_miner.py tests/test_miner_jsonl_visibility.py tests/test_convo_miner_size_cap.py tests/test_mcp_metadata_reserved_keys.py",
+    "result": {
+      "output": "........................................................................ [ 13%]\n.....................................F.....FF.F......................... [ 27%]\n..............................F................F........................ [ 40%]\n......F................................................................. [ 54%]\n..................................F..................................... [ 68%]\n........................................................................ [ 81%]\n........................................................................ [ 95%]\n.......................                                                  [100%]\n=================================== FAILURES ===================================\n____________________ test_format_tool_result_bash_head_tail ____________________\n\n    def test_format_tool_result_bash_head_tail():\n        \"\"\"Long Bash output gets head+tail with gap marker.\"\"\"\n        lines = [f\"line {i}\" for i in range(60)]\n        content = \"\\n\".join(lines)\n        result = _format_tool_result(content, \"Bash\")\n        assert \"line 0\" in result\n        assert \"line 19\" in result\n        assert \"line 40\" in result\n        assert \"line 59\" in result\n>       assert \"20 lines omitted\" in result\nE       AssertionError: assert '20 lines omitted' in '\u2192 line 0\\n\u2192 line 1\\n\u2192 line 2\\n\u2192 line 3\\n\u2192 line 4\\n\u2192 line 5\\n\u2192 line 6\\n\u2192 line 7\\n\u2192 line 8\\n\u2192 line 9\\n\u2192 line 10\\n\u2192 line... line 49\\n\u2192 line 50\\n\u2192 line 51\\n\u2192 line 52\\n\u2192 line 53\\n\u2192 line 54\\n\u2192 line 55\\n\u2192 line 56\\n\u2192 line 57\\n\u2192 line 58\\n\u2192 line 59'\n\ntests/test_normalize.py:253: AssertionError\n___________________ test_format_tool_result_grep_caps_at_20 ____________________\n\n    def test_format_tool_result_grep_caps_at_20():\n        \"\"\"Grep output beyond 20 lines is truncated.\"\"\"\n        lines = [f\"match_{i}.py\" for i in range(30)]\n        content = \"\\n\".join(lines)\n        result = _format_tool_result(content, \"Grep\")\n        assert \"match_19.py\" in result\n        assert \"match_20.py\" not in result\n>       assert \"10 more matches\" in result\nE       AssertionError: assert '10 more matches' in '\u2192 match_0.py\\n\u2192 match_1.py\\n\u2192 match_2.py\\n\u2192 match_3.py\\n\u2192 match_4.py\\n\u2192 match_5.py\\n\u2192 match_6.py\\n\u2192 match_7.py\\n\u2192 mat...y\\n\u2192 match_15.py\\n\u2192 match_16.py\\n\u2192 match_17.py\\n\u2192 match_18.py\\n\u2192 match_19.py [ingestion omitted: tool_lines; count=10]'\n\ntests/test_normalize.py:301: AssertionError\n___________________ test_format_tool_result_glob_caps_at_20 ____________________\n\n    def test_format_tool_result_glob_caps_at_20():\n        \"\"\"Glob output beyond 20 lines is truncated.\"\"\"\n        lines = [f\"/path/file_{i}.py\" for i in range(25)]\n        content = \"\\n\".join(lines)\n        result = _format_tool_result(content, \"Glob\")\n        assert \"file_19.py\" in result\n        assert \"file_20.py\" not in result\n>       assert \"5 more matches\" in result\nE       AssertionError: assert '5 more matches' in '\u2192 /path/file_0.py\\n\u2192 /path/file_1.py\\n\u2192 /path/file_2.py\\n\u2192 /path/file_3.py\\n\u2192 /path/file_4.py\\n\u2192 /path/file_5.py\\n\u2192 /... /path/file_16.py\\n\u2192 /path/file_17.py\\n\u2192 /path/file_18.py\\n\u2192 /path/file_19.py [ingestion omitted: tool_lines; count=5]'\n\ntests/test_normalize.py:311: AssertionError\n__________________ test_format_tool_result_unknown_truncates ___________________\n\n    def test_format_tool_result_unknown_truncates():\n        \"\"\"Unknown tool output over 2KB is truncated.\"\"\"\n        content = \"x\" * 3000\n        result = _format_tool_result(content, \"SomeTool\")\n>       assert result.endswith(\"... [truncated, 3000 chars]\")\nE       AssertionError: assert False\nE        +  where False = <built-in method endswith of str object at 0x344dd20>('... [truncated, 3000 chars]')\nE        +    where <built-in method endswith of str object at 0x344dd20> = '\u2192 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.endswith\n\ntests/test_normalize.py:324: AssertionError\n____________ test_chatgpt_export_array_survives_malformed_mappings _____________\n\n    def test_chatgpt_export_array_survives_malformed_mappings():\n        \"\"\"Arrays are now fed element-wise to the parser, so it must not raise.\n    \n        Any JSON array under the mined tree reaches this parser (an ES mapping\n        dump, a DB field map), and a raised exception would abort the whole\n        `mine --mode convos` run, since convo_miner only catches OSError/ValueError.\n        \"\"\"\n        malformed = [\n            [{\"mapping\": [1, 2, 3]}],\n            [{\"mapping\": \"oops\"}],\n            [{\"mapping\": {\"a\": \"not-a-dict\"}}],\n            [{\"mapping\": {\"r\": {\"parent\": None, \"message\": {\"author\": None}, \"children\": []}}}],\n            [{\"mapping\": {\"r\": {\"parent\": None, \"message\": \"text\", \"children\": []}}}],\n            [{\"mapping\": {\"r\": {\"parent\": None, \"message\": None, \"children\": \"nope\"}}}],\n            [{\"name\": \"users\", \"mapping\": {\"uid\": \"int\", \"email\": \"str\"}}],\n            # Root is well formed but the node it points at is not a dict.\n            [{\"mapping\": {\"r\": {\"parent\": None, \"message\": None, \"children\": [\"m1\"]}, \"m1\": \"oops\"}}],\n            # `children` as a mapping would raise KeyError on children[0].\n            [{\"mapping\": {\"r\": {\"parent\": None, \"message\": None, \"children\": {\"a\": \"m1\"}}}}],\n            # A tree serialised with child objects instead of ids: unhashable ids.\n            [{\"mapping\": {\"r\": {\"parent\": None, \"message\": None, \"children\": [[\"x\"]]}}}],\n            [\n                {\n                    \"name\": \"org-chart\",\n                    \"mapping\": {\n                        \"r\": {\n                            \"parent\": None,\n                            \"message\": None,\n                            \"children\": [{\"id\": \"n1\", \"label\": \"Engineering\"}],\n                        }\n                    },\n                }\n            ],\n            # A cycle must terminate rather than spin.\n            [\n                {\n                    \"mapping\": {\n                        \"r\": {\"parent\": None, \"message\": None, \"children\": [\"a\"]},\n                        \"a\": {\"parent\": \"r\", \"message\": None, \"children\": [\"r\"]},\n                    }\n                }\n            ],\n        ]\n        for payload in malformed:\n            assert _try_chatgpt_export_json_split(payload) is None\n>           assert _try_normalize_json_split(json.dumps(payload)) is None\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\ntests/test_normalize.py:1223: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\ncontent = '[{\"mapping\": {\"r\": {\"parent\": null, \"message\": {\"author\": null}, \"children\": []}}}]'\n\n    def _try_normalize_json_split(content: str) -> Optional[list]:\n        \"\"\"Try all known JSON chat schemas, returning each conversation found as\n        a separate list entry (bundle formats) or a single-element list.\n        \"\"\"\n    \n        content = unwrap_transcript(content)\n        # Extensions are only hints. A .json document can be prose explaining a\n        # format; do not interpret JSON examples embedded in that prose as events.\n        if not content.lstrip().startswith((\"{\", \"[\")):\n            return None\n    \n        normalized = _try_claude_code_jsonl(content)\n        if normalized:\n            return [normalized]\n    \n        normalized = _try_codex_jsonl(content)\n        if normalized:\n            return [normalized]\n    \n        # A recognized rollout must never become raw JSON text just because its\n        # conversation schema changed (or its first turn is still incomplete).\n        # Keep this outside the parser so additional supported schemas can return\n        # normally without changing the fallback boundary.\n        if looks_like_codex(content):\n            raise UnparsedCodexTranscriptError(\"unparsed_codex\")\n    \n        normalized = _try_gemini_jsonl(content)\n        if normalized:\n            return [normalized]\n    \n        normalized = _try_pi_jsonl(content)\n        if normalized:\n            return [normalized]\n    \n        try:\n            data = json.loads(content)\n        except json.JSONDecodeError:\n            if transcript_family(content):\n                raise NonIndexableContentError(\"malformed_transcript\")\n            return None\n    \n        normalized = _try_gemini_json(data)\n        if normalized:\n            return [normalized]\n    \n        split = _try_claude_ai_json_split(data)\n        if split:\n            return split\n    \n        split = _try_chatgpt_export_json_split(data)\n        if split:\n            return split\n    \n        for parser in (_try_chatgpt_json, _try_continue_json, _try_slack_json):\n            normalized = parser(data)\n            if normalized:\n                return [normalized]\n    \n        if transcript_family(content):\n>           raise NonIndexableContentError(\"unsupported_or_incomplete_transcript\")\nE           mempalace.ingestion.NonIndexableContentError: unsupported_or_incomplete_transcript\n\nmempalace/normalize.py:287: NonIndexableContentError\n____________________ test_continue_json_with_tool_messages _____________________\n\n    def test_continue_json_with_tool_messages():\n        \"\"\"Tool messages are appended to the previous assistant turn.\"\"\"\n        data = {\n            \"history\": [\n                {\"role\": \"user\", \"content\": \"List files\"},\n                {\"role\": \"assistant\", \"content\": \"Let me check.\"},\n                {\"role\": \"tool\", \"content\": \"file1.py\\nfile2.py\"},\n                {\"role\": \"assistant\", \"content\": \"I found two files.\"},\n            ]\n        }\n        result = _try_continue_json(data)\n        assert result is not None\n        assert \"> List files\" in result\n        assert \"Let me check.\" in result\n>       assert \"[tool] file1.py\" in result\nE       AssertionError: assert '[tool] file1.py' in '> List files\\nLet me check.\\n[tool] \u2192 file1.py\\nfile2.py\\n\\nI found two files.\\n'\n\ntests/test_normalize.py:1447: AssertionError\n______________________ test_normalize_rejects_large_file _______________________\n\ntmp_path = PosixPath('<publication>/test-tmp/pytest-of-op/pytest-2/test_normalize_rejects_large_f0')\n\n    def test_normalize_rejects_large_file(tmp_path):\n        \"\"\"Files over the 500 MB safety limit raise IOError instead of being read.\n    \n        Size is checked via ``os.fstat`` on the already-open descriptor (no TOCTOU\n        gap), so we stub fstat to report a huge regular file rather than mocking the\n        pre-open ``os.path.getsize``.\n        \"\"\"\n        big = tmp_path / \"huge_file.txt\"\n        big.write_text(\"not actually huge\")\n    \n        class _HugeStat:\n            st_mode = stat.S_IFREG | 0o644\n            st_size = 600 * 1024 * 1024\n    \n        with patch(\"mempalace.normalize.os.fstat\", return_value=_HugeStat()):\n            try:\n>               normalize(str(big))\n\ntests/test_normalize.py:1912: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \nmempalace/normalize.py:182: in normalize\n    content = _read_transcript_file(filepath)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nfilepath = '<publication>/test-tmp/pytest-of-op/pytest-2/test_normalize_rejects_large_f0/huge_file.txt'\nwith_fingerprint = False\n\n    def _read_transcript_file(filepath: str, *, with_fingerprint: bool = False):\n        \"\"\"Read a transcript source file with the same safety checks normalize()\n        and normalize_conversations() both need: no symlinks, regular files only,\n        size-capped, BOM-tolerant.\n        \"\"\"\n        # O_NONBLOCK keeps the \"not a regular file\" check below reachable: a\n        # blocking open of a FIFO waits in the kernel for a writer, so the\n        # S_ISREG test never runs. See ``miner._read_text_no_follow``, including\n        # why the EAGAIN branch re-checks the type and retries without the flag.\n        flags = os.O_RDONLY | getattr(os, \"O_NOFOLLOW\", 0) | getattr(os, \"O_NONBLOCK\", 0)\n        if os.path.islink(filepath):\n            raise IOError(f\"Could not read {filepath}: symlinked files are skipped\")\n        fd = -1\n        try:\n            try:\n                fd = os.open(filepath, flags)\n            except OSError as exc:\n                if exc.errno != errno.EAGAIN or not stat.S_ISREG(os.lstat(filepath).st_mode):\n                    raise\n                fd = os.open(filepath, flags & ~getattr(os, \"O_NONBLOCK\", 0))\n            file_stat = os.fstat(fd)\n            if not stat.S_ISREG(file_stat.st_mode):\n                # Text stays prefix-free: this raise is inside the ``try``, so the\n                # ``except OSError`` below composes \"Could not read <path>: ...\".\n                raise IOError(\"not a regular file\")\n            if file_stat.st_size > MAX_SOURCE_BYTES:\n>               raise NonIndexableContentError(\"source_byte_budget\", decision=\"unsupported\")\nE               mempalace.ingestion.NonIndexableContentError: source_byte_budget\n\nmempalace/normalize.py:156: NonIndexableContentError\n______________ test_mine_convos_passes_the_directory_it_read_from ______________\n\ntmp_path = PosixPath('<publication>/test-tmp/pytest-of-op/pytest-2/test_mine_convos_passes_the_di0')\nmonkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7087add74710>\n\n    def test_mine_convos_passes_the_directory_it_read_from(tmp_path, monkeypatch):\n        \"\"\"The storing half is covered above; this covers the wiring, so removing\n        the call in ``_mine_convos_impl`` cannot pass unnoticed (#2320).\"\"\"\n        from mempalace import convo_miner\n        from mempalace import source_identity as si\n    \n        transcripts = tmp_path / \"transcripts\"\n        transcripts.mkdir()\n        transcript = transcripts / \"session.jsonl\"\n        transcript.write_text(\n            '{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"'\n            + \"a conversation long enough to file a drawer \" * 6\n            + '\"},\"timestamp\":\"2026-04-13T10:00:00Z\",\"uuid\":\"u1\",\"sessionId\":\"s1\"}\\n',\n            encoding=\"utf-8\",\n        )\n    \n        seen = {}\n    \n        def record(*args, **kwargs):\n            seen[\"source_dir_ino\"] = kwargs.get(\"source_dir_ino\")\n            # Same shape the real helper returns: (drawers_added, room_delta,\n            # skipped), with the middle one a mapping the caller merges.\n            return (0, {}, True)\n    \n        monkeypatch.setattr(convo_miner, \"_file_chunks_locked\", record)\n        # The stub returns what the real helper returns, so the pass runs to the\n        # end and a failure after the recorded call is a failure of this test.\n        convo_miner.mine_convos(str(transcripts), str(tmp_path / \"palace\"))\n    \n>       assert seen.get(\"source_dir_ino\") == si.directory_identity(transcripts)\nE       AssertionError: assert None == '8915424'\nE        +  where None = <built-in method get of dict object at 0x7087adc79b00>('source_dir_ino')\nE        +    where <built-in method get of dict object at 0x7087adc79b00> = {}.get\nE        +  and   '8915424' = <function directory_identity at 0x7087ae5dafc0>(PosixPath('<publication>/test-tmp/pytest-of-op/pytest-2/test_mine_convos_passes_the_di0/transcripts'))\nE        +    where <function directory_identity at 0x7087ae5dafc0> = <module 'mempalace.source_identity' from '<publication>/mempalace/source_identity.py'>.directory_identity\n\ntests/test_convo_miner_unit.py:1144: AssertionError\n----------------------------- Captured stdout call -----------------------------\n\n=======================================================\n  MemPalace Mine -- Conversations\n=======================================================\n  Wing:    transcripts\n  Source:  <publication>/test-tmp/pytest-of-op/pytest-2/test_mine_convos_passes_the_di0/transcripts\n  Files:   1\n  Palace:  <publication>/test-tmp/pytest-of-op/pytest-2/test_mine_convos_passes_the_di0/palace\n-------------------------------------------------------\n\n\n=======================================================\n  Done.\n  Files processed: 1\n  Files skipped (already filed): 0\n  Drawers filed: 0\n\n  Next: mempalace search \"what you're looking for\"\n=======================================================\n\n------------------------------ Captured log call -------------------------------\nWARNING  mempalace_mcp:convo_miner.py:1072 Skipping <publication>/test-tmp/pytest-of-op/pytest-2/test_mine_convos_passes_the_di0/transcripts/session.jsonl: unsupported_or_incomplete_transcript; source remains eligible for retry\n=========================== short test summary info ============================\nFAILED tests/test_normalize.py::test_format_tool_result_bash_head_tail - Asse...\nFAILED tests/test_normalize.py::test_format_tool_result_grep_caps_at_20 - Ass...\nFAILED tests/test_normalize.py::test_format_tool_result_glob_caps_at_20 - Ass...\nFAILED tests/test_normalize.py::test_format_tool_result_unknown_truncates - A...\nFAILED tests/test_normalize.py::test_chatgpt_export_array_survives_malformed_mappings\nFAILED tests/test_normalize.py::test_continue_json_with_tool_messages - Asser...\nFAILED tests/test_normalize.py::test_normalize_rejects_large_file - mempalace...\nFAILED tests/test_convo_miner_unit.py::test_mine_convos_passes_the_directory_it_read_from\n8 failed, 519 passed in 16.53s",
+      "exit_code": 1,
+      "error": null
+    }
+  },
+  "final_integration": {
+    "command": [
+      "<snapshot>/.venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--maxfail=10",
+      "tests/ingestion_safeguards",
+      "tests/test_normalize.py",
+      "tests/test_convo_miner_unit.py",
+      "tests/test_convo_miner.py",
+      "tests/test_miner.py",
+      "tests/test_miner_jsonl_visibility.py",
+      "tests/test_convo_miner_size_cap.py",
+      "tests/test_mcp_metadata_reserved_keys.py"
+    ],
+    "exit_code": 0,
+    "stdout": "........................................................................ [ 10%]\n........................................................................ [ 21%]\n........................................................................ [ 32%]\n........................................................................ [ 42%]\n........................................................................ [ 53%]\n........................................................................ [ 64%]\n........................................................................ [ 75%]\n........................................................................ [ 85%]\n........................................................................ [ 96%]\n........................                                                 [100%]\n672 passed in 21.33s\n",
+    "stderr": ""
+  },
+  "compileall": {
+    "command": [
+      "<snapshot>/.venv/bin/python",
+      "-m",
+      "compileall",
+      "-q",
+      "mempalace",
+      "tests/ingestion_safeguards",
+      "scripts/record_check.py",
+      "scripts/shadow_demo.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "shadow_demo": {
+    "command": [
+      "<snapshot>/.venv/bin/python",
+      "scripts/shadow_demo.py"
+    ],
+    "exit_code": 0,
+    "stdout": "{\n  \"decision_counts\": {\n    \"archive-only\": 1,\n    \"keep\": 1,\n    \"sanitize\": 3,\n    \"unsupported\": 1\n  },\n  \"files\": [\n    {\n      \"conversations\": 1,\n      \"decision\": \"keep\",\n      \"input_bytes\": 60,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"plain_or_structured_text\": 1\n      },\n      \"selected_bytes\": 60,\n      \"sha256\": \"5bca7d7b85390e56aa7603280e5312766f0fda8c486bf2f8bf01866f20cd0bc1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/facts.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 315,\n      \"input_lines\": 4,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"c2cd9b6ac02d58c3b18a7657ecd0e5cda351057807aafa121a3d14545ddd8ef1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/canonical.jsonl\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"archive-only\",\n      \"input_bytes\": 113,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"unparsed_codex\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"ecea9ad0436ca3a337d4ea6968f32a9ce128fc3ebbcb3ac018e4a58dbd706c26\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/headerless.jsonl\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 366,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"a51dd0a7cadea0bead6e1932dc3e7ab622adeac63ca9a44ed592f1bdb37f3130\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/encoded.json\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"unsupported\",\n      \"input_bytes\": 465,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"encoding_depth\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"e10d0af470e6777f97ec0c5b3faeae9d324a50b81f1b461afa53e354e7a81cb3\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/excess-encoding.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 4132,\n      \"input_lines\": 2,\n      \"omission_counts\": {\n        \"opaque_line\": 1\n      },\n      \"reason_counts\": {\n        \"opaque_line\": 1\n      },\n      \"selected_bytes\": 35,\n      \"sha256\": \"fe361fa6753efac49363d7915207705d54fcc538d87868498b1988f388949a51\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/command-output.txt\"\n    }\n  ],\n  \"mode\": \"shadow\",\n  \"policy_version\": 1\n}\n",
+    "stderr": ""
+  },
+  "ruff_check": {
+    "command": [
+      "ruff",
+      "check",
+      ".",
+      "--output-format=json"
+    ],
+    "exit_code": 0,
+    "stdout": "[]",
+    "stderr": ""
+  },
+  "ruff_format": {
+    "command": [
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "exit_code": 0,
+    "stdout": "401 files already formatted\n",
+    "stderr": ""
+  },
+  "provenance": {
+    "archive_hashes_verified": 64,
+    "production_hashes_and_ast_verified": "Current/original hashes and five original AST matches verified; ingestion.py and normalize.py intentionally differ for review fixes.",
+    "current_production_AST_exceptions": [
+      "mempalace/ingestion.py",
+      "mempalace/normalize.py"
+    ]
+  },
+  "claude_review": {
+    "status": "blocked",
+    "requested_model": "Claude Sonnet 5.5",
+    "requested_effort": "medium",
+    "reason": "Intended local Anthropic authentication unavailable; no substitute is claimed.",
+    "auth_status_observed": {
+      "loggedIn": false,
+      "authMethod": "none",
+      "apiProvider": "firstParty",
+      "exit_code": 1
+    }
+  },
+  "full_upstream_collection": {
+    "command": "TZ=UTC TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 <snapshot>/.venv/bin/python -m pytest tests/ -q --collect-only --ignore=tests/benchmarks --maxfail=3",
+    "exit_code": 2,
+    "output_tail": "ite_routing.py::test_new_policy_rejects_legacy_or_invalid_values[0]\ntests/test_write_routing.py::test_new_policy_rejects_legacy_or_invalid_values[maybe]\ntests/test_write_routing.py::test_new_policy_rejects_legacy_or_invalid_values[]\ntests/test_write_routing.py::test_resolver_returns_first_configured_candidate\ntests/test_write_routing.py::test_resolver_names_invalid_source\ntests/test_write_routing.py::test_decision_matrix[direct-False-False-direct-False]\ntests/test_write_routing.py::test_decision_matrix[direct-True-True-direct-False]\ntests/test_write_routing.py::test_decision_matrix[prefer-True-False-daemon-False]\ntests/test_write_routing.py::test_decision_matrix[prefer-False-True-daemon-True]\ntests/test_write_routing.py::test_decision_matrix[prefer-False-False-direct-False]\ntests/test_write_routing.py::test_decision_matrix[require-True-False-daemon-False]\ntests/test_write_routing.py::test_decision_matrix[require-False-True-daemon-True]\ntests/test_write_routing.py::test_decision_matrix[require-False-False-blocked-False]\ntests/test_write_routing.py::test_hook_policy_defaults_to_direct\ntests/test_write_routing.py::test_cli_policy_defaults_to_direct\ntests/test_write_routing.py::test_scoped_env_beats_global_and_config\ntests/test_write_routing.py::test_global_env_beats_legacy_hook_env_and_config\ntests/test_write_routing.py::test_legacy_hook_env_beats_config\ntests/test_write_routing.py::test_scoped_config_beats_global_config\ntests/test_write_routing.py::test_global_config_applies_to_both_scopes\ntests/test_write_routing.py::test_legacy_hook_config_maps_true_to_prefer\ntests/test_write_routing.py::test_existing_hook_use_daemon_behavior_is_unchanged\ntests/test_write_routing.py::test_invalid_scoped_policy_fails_loudly\ntests/test_write_routing.py::test_invalid_routing_object_fails_loudly\ntests/test_write_routing.py::test_unknown_scope_is_rejected\n\n==================================== ERRORS ====================================\n________________ ERROR collecting tests/test_entity_detector.py ________________\nImportError while importing test module '<publication>/tests/test_entity_detector.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n../.local/share/uv/python/cpython-3.12.16-linux-x86_64-gnu/lib/python3.12/importlib/__init__.py:90: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests/test_entity_detector.py:12: in <module>\n    from hypothesis import given\nE   ModuleNotFoundError: No module named 'hypothesis'\n___________________ ERROR collecting tests/test_hooks_cli.py ___________________\nImportError while importing test module '<publication>/tests/test_hooks_cli.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n../.local/share/uv/python/cpython-3.12.16-linux-x86_64-gnu/lib/python3.12/importlib/__init__.py:90: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests/test_hooks_cli.py:11: in <module>\n    from hypothesis import given\nE   ModuleNotFoundError: No module named 'hypothesis'\n=========================== short test summary info ============================\nERROR tests/test_entity_detector.py\nERROR tests/test_hooks_cli.py\n!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!\n6770 tests collected, 2 errors in 10.01s",
+    "status": "Blocked by missing optional/development hypothesis dependency; full suite not executed."
+  },
+  "publication_security": {
+    "detect_secrets_version": "1.5.0",
+    "staged_files_scanned": 88,
+    "findings_reviewed": 166,
+    "unexpected_findings": 0,
+    "disposition": "165 hexadecimal Git/source/synthetic-input fingerprints and one known synthetic base64 fixture prefix, not credentials. Scanner dispositions retained locally.",
+    "added_line_pattern_scan": "One exec(compile(...)) at tests/ingestion_safeguards/test_mcp_admission.py:51 reads only two fixed repository handler paths in an isolated test fixture; no user-supplied code is executed.",
+    "private_deployment_reference_scan": "No tested local home paths, known private host addresses/names, or authentication store paths in staged content.",
+    "scope": "Historical first-correction scan; a fresh staged-artifact scan is required before publication."
+  },
+  "documentation_links": {
+    "relative_links_checked": 58,
+    "missing_targets": 0
+  },
+  "whitespace_check": {
+    "command": "git diff --cached --check",
+    "exit_code": 0,
+    "note": "Archived historical diagnostics/unified patches explicitly preserve original whitespace via a path-scoped .gitattributes exemption."
+  },
+  "pre_review_publication_checks": {
+    "final_integration": {
+      "command": "TZ=UTC TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ANONYMIZED_TELEMETRY=False <snapshot>/.venv/bin/python -m pytest -q --maxfail=15 tests/ingestion_safeguards tests/test_normalize.py tests/test_convo_miner_unit.py tests/test_convo_miner.py tests/test_miner.py tests/test_miner_jsonl_visibility.py tests/test_convo_miner_size_cap.py tests/test_mcp_metadata_reserved_keys.py",
+      "result": {
+        "output": "........................................................................ [ 13%]\n........................................................................ [ 27%]\n........................................................................ [ 40%]\n........................................................................ [ 54%]\n........................................................................ [ 68%]\n........................................................................ [ 81%]\n........................................................................ [ 95%]\n.......................                                                  [100%]\n527 passed in 17.17s",
+        "exit_code": 0,
+        "error": null
+      }
+    },
+    "compileall": {
+      "command": "<snapshot>/.venv/bin/python -m compileall -q mempalace tests/ingestion_safeguards scripts/record_check.py scripts/shadow_demo.py",
+      "result": {
+        "output": "",
+        "exit_code": 0,
+        "error": null
+      }
+    },
+    "shadow_demo": {
+      "command": "TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 <snapshot>/.venv/bin/python scripts/shadow_demo.py",
+      "result": {
+        "output": "{\n  \"decision_counts\": {\n    \"archive-only\": 1,\n    \"keep\": 1,\n    \"sanitize\": 3,\n    \"unsupported\": 1\n  },\n  \"files\": [\n    {\n      \"conversations\": 1,\n      \"decision\": \"keep\",\n      \"input_bytes\": 60,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"plain_or_structured_text\": 1\n      },\n      \"selected_bytes\": 60,\n      \"sha256\": \"5bca7d7b85390e56aa7603280e5312766f0fda8c486bf2f8bf01866f20cd0bc1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/facts.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 315,\n      \"input_lines\": 4,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"c2cd9b6ac02d58c3b18a7657ecd0e5cda351057807aafa121a3d14545ddd8ef1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/canonical.jsonl\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"archive-only\",\n      \"input_bytes\": 113,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"unparsed_codex\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"ecea9ad0436ca3a337d4ea6968f32a9ce128fc3ebbcb3ac018e4a58dbd706c26\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/headerless.jsonl\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 366,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"a51dd0a7cadea0bead6e1932dc3e7ab622adeac63ca9a44ed592f1bdb37f3130\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/encoded.json\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"unsupported\",\n      \"input_bytes\": 465,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"encoding_depth\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"e10d0af470e6777f97ec0c5b3faeae9d324a50b81f1b461afa53e354e7a81cb3\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/excess-encoding.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 4132,\n      \"input_lines\": 2,\n      \"omission_counts\": {\n        \"opaque_line\": 1\n      },\n      \"reason_counts\": {\n        \"opaque_line\": 1\n      },\n      \"selected_bytes\": 35,\n      \"sha256\": \"fe361fa6753efac49363d7915207705d54fcc538d87868498b1988f388949a51\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/command-output.txt\"\n    }\n  ],\n  \"mode\": \"shadow\",\n  \"policy_version\": 1\n}",
+        "exit_code": 0,
+        "error": null
+      }
+    },
+    "ruff_check": {
+      "command": "uvx --from ruff==0.16.6 ruff check . --output-format=json",
+      "exit_code": 0,
+      "stdout": "[]",
+      "stderr": ""
+    },
+    "ruff_format": {
+      "command": "uvx --from ruff==0.16.6 ruff format --check .",
+      "exit_code": 0,
+      "stdout": "399 files already formatted\n",
+      "stderr": ""
+    },
+    "provenance": {
+      "archive_hashes_verified": 64,
+      "production_hashes_and_ast_verified": 7
+    },
+    "meaning": "Historical 527-case result; superseded by current checks."
+  },
+  "current_test_summary": {
+    "selected_passes": 733,
+    "safeguards": 290,
+    "affected_upstream": 443,
+    "new_third_review_cases": 61,
+    "guarded_subprocess_platform": "Linux",
+    "full_upstream_suite_rerun": false,
+    "requested_claude_review_run": false
+  },
+  "independent_review": {
+    "initial_verdict": "failed",
+    "initial_findings": "INITIAL_REVIEW.json",
+    "current_full_patch_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+    "status": "failed_final_full_patch_review",
+    "second_review_findings": "SECOND_REVIEW.md",
+    "is_requested_Claude_review": false,
+    "full_patch_artifact": "docs/reviews/ingestion-safeguards/review-second-fixes/FROZEN_SOURCE.patch",
+    "final_review_findings": "THIRD_REVIEW.md",
+    "final_review_record_is_partial": false,
+    "parent_security_reproduction": "review-second-fixes/parent-memory-blocker.json",
+    "parent_confirmed_security_blocker": true,
+    "final_review_json": "THIRD_REVIEW.json",
+    "final_review_finding_ids": [
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "R5"
+    ],
+    "final_review_reviewed_patch_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50"
+  },
+  "pre_third_correction_publication_gate": {
+    "status": "blocked_final_review_failed_automatic_corrections_exhausted",
+    "failed_review_records": [
+      "INITIAL_REVIEW.json",
+      "SECOND_REVIEW.md",
+      "THIRD_REVIEW.md"
+    ],
+    "current_patch_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+    "test_result_scope": "672 selected passes; final independent review failed and parent confirmed a memory-exhaustion blocker on matching source. Not publication/full-suite/deployment approval.",
+    "automatic_correction_cycles_used": 2,
+    "next_action": "User decision required before another bounded parser-hardening correction and fresh full-patch review."
+  },
+  "pre_third_correction_test_summary": {
+    "affected_upstream_baseline": 443,
+    "synthetic_safeguards": 229,
+    "first_review_regressions": 92,
+    "second_review_regressions": 53,
+    "publication_review_regressions": 145,
+    "integrated_passed": 672,
+    "full_upstream_suite_certified": false
+  },
+  "third_correction_checks": {
+    "integration": {
+      "command": "TZ=UTC TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ANONYMIZED_TELEMETRY=False <isolated-python> -m pytest -q --maxfail=10 --tb=short tests/ingestion_safeguards tests/test_normalize.py tests/test_convo_miner_unit.py tests/test_convo_miner.py tests/test_miner.py tests/test_miner_jsonl_visibility.py tests/test_convo_miner_size_cap.py tests/test_mcp_metadata_reserved_keys.py",
+      "exit_code": 0,
+      "output": "........................................................................ [  9%]\n........................................................................ [ 19%]\n........................................................................ [ 29%]\n........................................................................ [ 39%]\n........................................................................ [ 49%]\n........................................................................ [ 58%]\n........................................................................ [ 68%]\n........................................................................ [ 78%]\n........................................................................ [ 88%]\n........................................................................ [ 98%]\n.............                                                            [100%]\n733 passed in 23.38s\n"
+    },
+    "ruff-check": {
+      "command": "ruff check --no-cache .",
+      "exit_code": 0,
+      "output": "All checks passed!\n"
+    },
+    "ruff-format": {
+      "command": "ruff format --check .",
+      "exit_code": 0,
+      "output": "402 files already formatted\n"
+    },
+    "compileall": {
+      "command": "<isolated-python> -m compileall -q mempalace tests/ingestion_safeguards scripts/record_check.py scripts/shadow_demo.py",
+      "exit_code": 0,
+      "output": ""
+    },
+    "version-check": {
+      "command": "<isolated-python> scripts/check_versions.py",
+      "exit_code": 0,
+      "output": "## Detected versions\n\n| Source | Version |\n| --- | --- |\n| `mempalace/version.py (__version__)` | `3.11.0` |\n| `pyproject.toml (project.version)` | `3.11.0` |\n| `.claude-plugin/marketplace.json (plugins[mempalace].version)` | `3.11.0` |\n| `.claude-plugin/plugin.json (version)` | `3.11.0` |\n| `.codex-plugin/plugin.json (version)` | `3.11.0` |\n| `.dsh-plugin/package.json (version)` | `3.11.0` |\n| `integrations/openclaw/SKILL.md (frontmatter.version)` | `3.11.0` |\n| `README.md (version-shield)` | `3.11.0` |\n| `uv.lock (mempalace (editable '.'))` | `3.11.0` |\n| `Cargo.toml (workspace.package.version)` | `3.11.0` |\n| `Cargo.lock (mempalace-cli)` | `3.11.0` |\n| `Cargo.lock (mempalace-core)` | `3.11.0` |\n| `Cargo.lock (mempalace-py)` | `3.11.0` |\n\nAll 13 version values agree.\n"
+    },
+    "shadow-demo": {
+      "command": "TZ=UTC TMPDIR=\"$PWD/test-tmp\" HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ANONYMIZED_TELEMETRY=False <isolated-python> scripts/shadow_demo.py",
+      "exit_code": 0,
+      "output": "{\n  \"decision_counts\": {\n    \"archive-only\": 1,\n    \"keep\": 1,\n    \"sanitize\": 3,\n    \"unsupported\": 1\n  },\n  \"files\": [\n    {\n      \"conversations\": 1,\n      \"decision\": \"keep\",\n      \"input_bytes\": 60,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"plain_or_structured_text\": 1\n      },\n      \"selected_bytes\": 60,\n      \"sha256\": \"5bca7d7b85390e56aa7603280e5312766f0fda8c486bf2f8bf01866f20cd0bc1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/facts.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 315,\n      \"input_lines\": 4,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"c2cd9b6ac02d58c3b18a7657ecd0e5cda351057807aafa121a3d14545ddd8ef1\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/canonical.jsonl\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"archive-only\",\n      \"input_bytes\": 113,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"unparsed_codex\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"ecea9ad0436ca3a337d4ea6968f32a9ce128fc3ebbcb3ac018e4a58dbd706c26\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/headerless.jsonl\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 366,\n      \"input_lines\": 1,\n      \"omission_counts\": {\n        \"codex_noncanonical_event\": 1\n      },\n      \"reason_counts\": {\n        \"codex_noncanonical_event\": 1,\n        \"normalized_transcript\": 1\n      },\n      \"selected_bytes\": 31,\n      \"sha256\": \"a51dd0a7cadea0bead6e1932dc3e7ab622adeac63ca9a44ed592f1bdb37f3130\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/encoded.json\"\n    },\n    {\n      \"conversations\": 0,\n      \"decision\": \"unsupported\",\n      \"input_bytes\": 465,\n      \"input_lines\": 1,\n      \"omission_counts\": {},\n      \"reason_counts\": {\n        \"encoding_depth\": 1\n      },\n      \"selected_bytes\": 0,\n      \"sha256\": \"e10d0af470e6777f97ec0c5b3faeae9d324a50b81f1b461afa53e354e7a81cb3\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/excess-encoding.json\"\n    },\n    {\n      \"conversations\": 1,\n      \"decision\": \"sanitize\",\n      \"input_bytes\": 4132,\n      \"input_lines\": 2,\n      \"omission_counts\": {\n        \"opaque_line\": 1\n      },\n      \"reason_counts\": {\n        \"opaque_line\": 1\n      },\n      \"selected_bytes\": 35,\n      \"sha256\": \"fe361fa6753efac49363d7915207705d54fcc538d87868498b1988f388949a51\",\n      \"source\": \"<publication>/test-tmp/shadow-demo/command-output.txt\"\n    }\n  ],\n  \"mode\": \"shadow\",\n  \"policy_version\": 1\n}\n"
+    }
+  },
+  "ci_runner_compatibility": {
+    "first_pr_run_id": 43016893606,
+    "job_id": 130510095859,
+    "failure_stage": "actions/setup-python; tests did not run",
+    "error": "The version '3.9' with architecture 'x64' was not found for Ubuntu 26.04.",
+    "correction": "Only Python 3.9 now runs on ubuntu-24.04; other entries remain on ubuntu-latest.",
+    "application_source_changed": false
+  }
+}

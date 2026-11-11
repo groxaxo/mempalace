@@ -1,0 +1,70 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+......................................................FFF..              [100%]
+=================================== FAILURES ===================================
+_ test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back[{"type":"session_metadata","sessionId":"synthetic"}] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-37/test_incomplete_other_supporte0')
+content = '{"type":"session_metadata","sessionId":"synthetic"}'
+
+    @pytest.mark.parametrize("content", [
+        '{"type":"session_metadata","sessionId":"synthetic"}',
+        '{"type":"session","version":3,"id":"synthetic"}',
+        '[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]',
+    ])
+    def test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back(tmp_path, content):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "incomplete.jsonl"
+        source.write_text(content)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:357: Failed
+_ test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back[{"type":"session","version":3,"id":"synthetic"}] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-37/test_incomplete_other_supporte1')
+content = '{"type":"session","version":3,"id":"synthetic"}'
+
+    @pytest.mark.parametrize("content", [
+        '{"type":"session_metadata","sessionId":"synthetic"}',
+        '{"type":"session","version":3,"id":"synthetic"}',
+        '[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]',
+    ])
+    def test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back(tmp_path, content):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "incomplete.jsonl"
+        source.write_text(content)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:357: Failed
+_ test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back[[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-37/test_incomplete_other_supporte2')
+content = '[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]'
+
+    @pytest.mark.parametrize("content", [
+        '{"type":"session_metadata","sessionId":"synthetic"}',
+        '{"type":"session","version":3,"id":"synthetic"}',
+        '[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]',
+    ])
+    def test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back(tmp_path, content):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "incomplete.jsonl"
+        source.write_text(content)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:357: Failed
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back[{"type":"session_metadata","sessionId":"synthetic"}]
+FAILED tests/test_ingestion.py::test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back[{"type":"session","version":3,"id":"synthetic"}]
+FAILED tests/test_ingestion.py::test_incomplete_other_supported_sessions_and_bundles_do_not_fall_back[[{"chat_messages":[{"sender":"human","text":"Only one turn"}]}]]
+3 failed, 56 passed in 0.18s
+
+EXIT STATUS: 1

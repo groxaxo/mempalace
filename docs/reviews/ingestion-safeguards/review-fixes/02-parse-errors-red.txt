@@ -1,0 +1,238 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 <snapshot>/.venv/bin/python -m pytest tests/ingestion_safeguards/test_review_fixes.py -k 'source_literals or malformed or transcript_families' -v --tb=short
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- <snapshot>/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: <publication>
+configfile: pyproject.toml
+plugins: anyio-4.16.0
+collecting ... collected 86 items / 26 deselected / 60 selected
+
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field"}\n];] FAILED [  1%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": "documented fixture"}\n];] FAILED [  3%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field",},\n]] FAILED [  5%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];] FAILED [  6%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];] FAILED [  8%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field", "enabled": True},\n]] FAILED [ 10%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]] FAILED [ 11%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];] FAILED [ 13%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]] FAILED [ 15%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];] FAILED [ 16%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"names": ["rawOutput", "thinking", "bytes"], "enabled": False},\n]] PASSED [ 18%]
+tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[```javascript\n[\n {"type": "thinking", "thinking": "documented fixture"}\n];\n```] PASSED [ 20%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field"}\n];] FAILED [ 21%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": "documented fixture"}\n];] FAILED [ 23%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field",},\n]] FAILED [ 25%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];] FAILED [ 26%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];] FAILED [ 28%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field", "enabled": True},\n]] FAILED [ 30%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]] FAILED [ 31%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];] FAILED [ 33%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]] FAILED [ 35%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];] FAILED [ 36%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"names": ["rawOutput", "thinking", "bytes"], "enabled": False},\n]] PASSED [ 38%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[```javascript\n[\n {"type": "thinking", "thinking": "documented fixture"}\n];\n```] PASSED [ 40%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"base64":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 41%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"format":"binary","bytes":[91,92] PASSED [ 43%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":[91,92] PASSED [ 45%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"rawOutput":{"bytes":[91,,92]}}] PASSED [ 46%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[content4] PASSED [ 48%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"type":"Buffer","data":[91,92] PASSED [ 50%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL] FAILED [ 51%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"type":"thinking","thinking":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 53%]
+tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"type":"input_image","source":{"data":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 55%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"base64":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 56%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"format":"binary","bytes":[91,92] PASSED [ 58%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":[91,92] PASSED [ 60%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"rawOutput":{"bytes":[91,,92]}}] PASSED [ 61%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[content4] PASSED [ 63%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"type":"Buffer","data":[91,92] PASSED [ 65%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL] FAILED [ 66%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"type":"thinking","thinking":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 68%]
+tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"type":"input_image","source":{"data":"FORBIDDEN_OPAQUE_SENTINEL] PASSED [ 70%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-codex] PASSED [ 71%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-claude-code] PASSED [ 73%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-claude-ai] PASSED [ 75%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-chatgpt] PASSED [ 76%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-gemini-json] PASSED [ 78%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-gemini-jsonl] PASSED [ 80%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-pi] PASSED [ 81%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-continue] PASSED [ 83%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[-slack] PASSED [ 85%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-codex] PASSED [ 86%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-claude-code] PASSED [ 88%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-claude-ai] PASSED [ 90%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-chatgpt] PASSED [ 91%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-gemini-json] PASSED [ 93%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-gemini-jsonl] PASSED [ 95%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-pi] PASSED [ 96%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-continue] PASSED [ 98%]
+tests/ingestion_safeguards/test_review_fixes.py::test_supported_incomplete_transcript_families_still_refuse_raw_fallback[\n{"unfinished":-slack] PASSED [100%]
+
+=================================== FAILURES ===================================
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field"}\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": "documented fixture"}\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field",},\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field", "enabled": True},\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:153: in test_source_literals_with_transport_field_names_are_preserved
+    assert result.decision == "keep" and result.indexable
+E   AssertionError: assert ('archive-only' == 'keep'
+E     
+E     - keep
+E     + archive-only)
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field"}\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_0/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": "documented fixture"}\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_1/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field",},\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_2/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_3/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_4/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field", "enabled": True},\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_5/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_6/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_7/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_8/example.js: malformed_transport,no_useful_content
+_ test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];] _
+tests/ingestion_safeguards/test_review_fixes.py:168: in test_project_writer_preserves_source_literals_with_transport_names
+    assert result[0] > 0 and result[2] is None
+E   assert (0 > 0)
+------------------------------ Captured log call -------------------------------
+WARNING  mempalace_mcp:miner.py:1933 Skipping <publication>/test-tmp/pytest-of-op/pytest-8/test_project_writer_preserves_9/example.js: malformed_transport,no_useful_content
+_ test_malformed_typed_transport_remains_nonindexable[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL] _
+tests/ingestion_safeguards/test_review_fixes.py:194: in test_malformed_typed_transport_remains_nonindexable
+    assert not result.indexable and not result.text
+E   assert (not True)
+E    +  where True = Admission(decision='keep', conversations=('{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL',), reasons=('plain_or_structured_text',), omissions={}, source='').indexable
+_ test_project_writer_refuses_malformed_transport_before_mutation[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL] _
+tests/ingestion_safeguards/test_review_fixes.py:206: in test_project_writer_refuses_malformed_transport_before_mutation
+    assert result[0] == 0 and result[2] == "admission_rejected"
+E   assert (1 == 0)
+=========================== short test summary info ============================
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field"}\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": "documented fixture"}\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field",},\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "documented API field", "enabled": True},\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_source_literals_with_transport_field_names_are_preserved[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field"}\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": "documented fixture"}\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field",},\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n // rawOutput is an API field\n {"rawOutput": "documented // literal"},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", /* documented */ "thinking": "fixture"},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "documented API field", "enabled": True},\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"type": "thinking", "thinking": 'documented fixture'},\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option", "bytes": [1, 2]}},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": {"base64": "documented option"}}, # Python comment\n]]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_preserves_source_literals_with_transport_names[[\n {"rawOutput": "literal /* comment */ and # text; ,]"},\n];]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_malformed_typed_transport_remains_nonindexable[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL]
+FAILED tests/ingestion_safeguards/test_review_fixes.py::test_project_writer_refuses_malformed_transport_before_mutation[{"encoding":"base64","data":"FORBIDDEN_OPAQUE_SENTINEL]
+================= 22 failed, 38 passed, 26 deselected in 0.43s =================
+
+EXIT STATUS: 1

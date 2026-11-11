@@ -28,6 +28,13 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing: 
     except ValueError as e:
         return {"success": False, "error": str(e)}
 
+    from ..ingestion import admit_text, indexing_text
+
+    admission = admit_text(entry)
+    if not admission.indexable:
+        return admission.refusal()
+    entry = indexing_text(admission.text)
+
     if wing:
         wing = sanitize_name(wing)
     else:
@@ -67,6 +74,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing: 
             "agent": agent_name,
             "filed_at": now.isoformat(),
             "date": now.strftime("%Y-%m-%d"),
+            **admission.metadata(),
         }
         chunk_size = _config.chunk_size
         if len(entry) <= chunk_size:
@@ -603,7 +611,13 @@ def tool_checkpoint(items, diary=None, dedup_threshold=0.9, added_by=None):
                 {"item": item, "error": "wing, room, content must be non-empty strings"}
             )
             continue
-        dup = tool_check_duplicate(content, threshold=dedup_threshold)
+        from ..ingestion import admit_text, indexing_text
+
+        admission = admit_text(content)
+        if not admission.indexable:
+            out["errors"].append(admission.refusal())
+            continue
+        dup = tool_check_duplicate(indexing_text(admission.text), threshold=dedup_threshold)
         if dup.get("is_duplicate"):
             out["duplicates"].append({"room": room, "matches": dup.get("matches", [])})
             continue

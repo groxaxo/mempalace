@@ -1,0 +1,1049 @@
+{
+  "release_base_commit": "602d796c699cabba2971982cd9dccbbf46abfe79",
+  "release_tag_object": "208df468b0ee5c27028d7bf42cea619a0237e88c",
+  "snapshot_baseline_commit": "88222ec8be25295c6ea2155ee6cdcf89c58e58fd",
+  "archive_files": [
+    {
+      "source_snapshot_path": "evidence/CLAUDE_REVIEW_HANDOFF.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/CLAUDE_REVIEW_HANDOFF.txt",
+      "source_sha256": "8cad499fda6ba387f040b66068036729342244196784582f4212fe7b5823c95b",
+      "published_sha256": "017ee19f632f1615cf77e8be45d125ca4d61b8f163e82e5cb372692d7085a36e",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/FINAL_COMPILEALL.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/FINAL_COMPILEALL.txt",
+      "source_sha256": "5750f3600cbd966cd343404f58671c2731adfb7bf36bc8a8e520096e7ec38e0f",
+      "published_sha256": "309cafd48b07a0769af42ffabdc9088f845d1e66a1619b2329ccda539dba3a08",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/FINAL_DIFF_CHECK.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/FINAL_DIFF_CHECK.txt",
+      "source_sha256": "86d769036a061210f88777b2fc4f0ed1f5d81131902cf0bf6a4447076abb8e98",
+      "published_sha256": "5aec276e32c80a04f80e9d6c62dbb25737b4f549c7d6aaec5ef037fe680a909e",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/FINAL_PATCH_CHECK.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/FINAL_PATCH_CHECK.txt",
+      "source_sha256": "4cd8205a6f0e2f7957085bbcbfdc2cedcc4b3754967cfaf2d12f1ae40bad3ee4",
+      "published_sha256": "07d5d02d68afa7af821ce24899193a7e04da14d27cb0c8cdd810781309a1c80a",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/FINAL_PYTEST.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/FINAL_PYTEST.txt",
+      "source_sha256": "b99e5956e6fc17a03228f4373802653566f390634c8ad4fca2bec07ee739d56c",
+      "published_sha256": "16a61daf62a5a3bd4a01221a505afde954ee85b0359c545a3bbe1af4be418a83",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/FINAL_SHADOW_DEMO.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/FINAL_SHADOW_DEMO.txt",
+      "source_sha256": "983df18232325db2367085fc7e96b0982d441cca533b1093e3003f4504ef7ad9",
+      "published_sha256": "a38ac673cdb18199fcbe042e5a1923957c3aeecd642d6283d89ec64bb6a8cf65",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/IMPLEMENTATION.patch",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/IMPLEMENTATION.patch",
+      "source_sha256": "c9f075323d197485bb6e8c4d12f22ea637d4aff675d21db10f6b148fc99c2d8a",
+      "published_sha256": "c9f075323d197485bb6e8c4d12f22ea637d4aff675d21db10f6b148fc99c2d8a",
+      "redacted": false
+    },
+    {
+      "source_snapshot_path": "evidence/INDEPENDENT_COMPILEALL.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/INDEPENDENT_COMPILEALL.txt",
+      "source_sha256": "ab1c563ea00799ad575adcaec12c61d6004fbbd3a8949da8ea5f00f9f19ee236",
+      "published_sha256": "de4d5a127f9061d014f70b3236fb2c529716a5f161c290110cd44cfb9d426b8e",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/INDEPENDENT_DIFF_CHECK.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/INDEPENDENT_DIFF_CHECK.txt",
+      "source_sha256": "d779950e5245f0332097591004dce3d6145827fb56a8548ae7ffe6736c957c0e",
+      "published_sha256": "d779950e5245f0332097591004dce3d6145827fb56a8548ae7ffe6736c957c0e",
+      "redacted": false
+    },
+    {
+      "source_snapshot_path": "evidence/INDEPENDENT_PYTEST.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/INDEPENDENT_PYTEST.txt",
+      "source_sha256": "7f0ff3bd7c5f1dc2ea0df9dd1e7595873b04a9da109bc8e332119e02a2fb4176",
+      "published_sha256": "c059b076c4b9a2428094c1a01c22794fff1a7c0d3fe910a7d788e2e4114feef1",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/INDEPENDENT_SHADOW_DEMO.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/INDEPENDENT_SHADOW_DEMO.txt",
+      "source_sha256": "9585e5980c0e4f97077e68ebbd68a29c1c70519e806b348a6561f5bdc973f988",
+      "published_sha256": "4550726d180bc77497131bf32c782e7690e5af7ea291f1d2e4110a7911587b3f",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/INDEPENDENT_VERIFICATION.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/INDEPENDENT_VERIFICATION.txt",
+      "source_sha256": "33fe5b0b6d820a5e760250da7774de8a85d0375cc98136208a861ff573d70bad",
+      "published_sha256": "ccf54373055433c121e34d7feb711c5b2009e7ae3399636e5e64777c8ae1e2d8",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/INITIAL_STATUS.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/INITIAL_STATUS.txt",
+      "source_sha256": "dce26ccd36c74a3f248f95235c8b0fa1b93ec1d6c4796dc2c6dc587f74dc4e27",
+      "published_sha256": "dce26ccd36c74a3f248f95235c8b0fa1b93ec1d6c4796dc2c6dc587f74dc4e27",
+      "redacted": false
+    },
+    {
+      "source_snapshot_path": "evidence/MARKER_ASCII_BOUNDARY_PROBE.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/MARKER_ASCII_BOUNDARY_PROBE.txt",
+      "source_sha256": "7ef2b05b367ecc8661126e4c70bc0088a37aaa86720bb10b6f99426adc4a0bbd",
+      "published_sha256": "46ffdc4be660984a06ba50f093089f215feae5626b7d9695c42c189fd19f2ba9",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/MARKER_BOUNDARY_PROBE.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/MARKER_BOUNDARY_PROBE.txt",
+      "source_sha256": "7ef2b05b367ecc8661126e4c70bc0088a37aaa86720bb10b6f99426adc4a0bbd",
+      "published_sha256": "46ffdc4be660984a06ba50f093089f215feae5626b7d9695c42c189fd19f2ba9",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/NEW_FILES_DIFF_CHECK.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/NEW_FILES_DIFF_CHECK.txt",
+      "source_sha256": "b79158cd57a151d9b567b1865f1e93390e77c837b94a2d0aa8b0d7848f739cd1",
+      "published_sha256": "b79158cd57a151d9b567b1865f1e93390e77c837b94a2d0aa8b0d7848f739cd1",
+      "redacted": false
+    },
+    {
+      "source_snapshot_path": "evidence/PATCH_CHECK_REPORT_EXPORT_MISMATCH.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/PATCH_CHECK_REPORT_EXPORT_MISMATCH.txt",
+      "source_sha256": "8686e47bee07d4d163747025e453bf9c24bb2180df7dddb69e993d05acebe495",
+      "published_sha256": "43ecd582753ebdc954b11650b13a987ec1ff46a8ab0854958b761a4801c010bb",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/POSITIVE_AND_PRESERVATION_CHECKS.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/POSITIVE_AND_PRESERVATION_CHECKS.txt",
+      "source_sha256": "d031115c048aafdf95444903c259cd1141ca100f92212aa0aee76481d098503c",
+      "published_sha256": "96498c35d7f1354cc782e0bb44ca0945aa3b48ca83bba553c4bcefaa53a98902",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/POSITIVE_AND_PRESERVATION_GREEN.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/POSITIVE_AND_PRESERVATION_GREEN.txt",
+      "source_sha256": "df7896e0007d6ca92047f4e351d5dbcef9d2c6ae53124f49f935e84d47016622",
+      "published_sha256": "9fbc4223868ee582373b177f3d4dd946b491530ecf6d70f6535754894f2b7b80",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/PRE_REPORT_PATCH_CHECK.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/PRE_REPORT_PATCH_CHECK.txt",
+      "source_sha256": "4cd8205a6f0e2f7957085bbcbfdc2cedcc4b3754967cfaf2d12f1ae40bad3ee4",
+      "published_sha256": "07d5d02d68afa7af821ce24899193a7e04da14d27cb0c8cdd810781309a1c80a",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/PRE_REVIEW_COMPILEALL.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/PRE_REVIEW_COMPILEALL.txt",
+      "source_sha256": "5750f3600cbd966cd343404f58671c2731adfb7bf36bc8a8e520096e7ec38e0f",
+      "published_sha256": "309cafd48b07a0769af42ffabdc9088f845d1e66a1619b2329ccda539dba3a08",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/PRE_REVIEW_PYTEST.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/PRE_REVIEW_PYTEST.txt",
+      "source_sha256": "9f44a922c76f455236467f7ce72aa98465ea1c5b8c11619a3ee8495b258c53b3",
+      "published_sha256": "afac4246bf758a1f9e1fa30beb48e55d1d8ba5c31f79b28da22640f1d4ac171d",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/REVIEW_MANIFEST.json",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/REVIEW_MANIFEST.json",
+      "source_sha256": "8eeffdcc7e77e9fae344ec7f77a9011712d6fb90e1666413da45269ba4e2c74c",
+      "published_sha256": "8eeffdcc7e77e9fae344ec7f77a9011712d6fb90e1666413da45269ba4e2c74c",
+      "redacted": false
+    },
+    {
+      "source_snapshot_path": "evidence/SHADOW_DEMO.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/SHADOW_DEMO.txt",
+      "source_sha256": "983df18232325db2367085fc7e96b0982d441cca533b1093e3003f4504ef7ad9",
+      "published_sha256": "a38ac673cdb18199fcbe042e5a1923957c3aeecd642d6283d89ec64bb6a8cf65",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/TDD_INDEX.md",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/TDD_INDEX.md",
+      "source_sha256": "b0b04e7a53596760a7070ef783599a0b96eded9828e5e2924b3a216167b3c7a3",
+      "published_sha256": "b0b04e7a53596760a7070ef783599a0b96eded9828e5e2924b3a216167b3c7a3",
+      "redacted": false
+    },
+    {
+      "source_snapshot_path": "evidence/UNCHANGED_BOUNDARIES.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/UNCHANGED_BOUNDARIES.txt",
+      "source_sha256": "b283d463638b6fe7bee6b871ab36eff67c54d2d7f49a92e272bcae435e0a5e5f",
+      "published_sha256": "441da07f399c8625721abc4fbc3e266f3677d524c061a8b0ad931bf7db9763da",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/01-headerless-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/01-headerless-green.txt",
+      "source_sha256": "27d0563bdd6affe2a2447d1e1da549b89603902c6127cef1a2052ac4b9eead49",
+      "published_sha256": "6732de89112575bf35a6a5123a5c7eeb44718c75e449ed20ae9851916ab15c61",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/01-headerless-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/01-headerless-red.txt",
+      "source_sha256": "c378ed7f7b34bea9baaf0715829487d71351f23d6ee5455947fc115c3edc2c47",
+      "published_sha256": "3b832d3648e0af7252fb907360aefc0549e261327fe24bbe486c36576aa62099",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/02-envelope-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/02-envelope-green.txt",
+      "source_sha256": "a3c087ee673a230a773657babc81131f6c91f74166b01d53aa4f6310bcce7923",
+      "published_sha256": "c124bf918d42b51c9998695951a5de2df5c2587e7d667be0b7b32135e9b779e5",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/02-envelope-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/02-envelope-red.txt",
+      "source_sha256": "77426284af1ddf1e00db6b62e99b69b910e5dbd5f80fe710d33f44c785fcf0b9",
+      "published_sha256": "7592e736919e517a91b85159fc86d8cca760840990d97ec9b75ac5c779f01273",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/03-encoding-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/03-encoding-green.txt",
+      "source_sha256": "66decdbc1d93e85ca5bb803651599dd8b7eb79afdd6556f2112341fab3c44f2f",
+      "published_sha256": "c7853d434524e37c3e20e4f1d66f8f70d56193a0bd146e4a60238b95a0fe6c27",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/03-encoding-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/03-encoding-red.txt",
+      "source_sha256": "606b6f12a73638ef5ae102dbae9d7c23efd0e51affe132867a5a494ab0e86696",
+      "published_sha256": "70098264a0303ad508f8b3ed14c97ee6fdbd2914d2c87e8a2db7aa0546ecb3c9",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/04-other-envelopes-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/04-other-envelopes-green.txt",
+      "source_sha256": "991f61c9817c855ac998766ffc863e2d73eba71a27a17bfe7d46c4ab656c5c24",
+      "published_sha256": "151ced12ba662f27fc23cd4d68bf924dec9d455f16768614b67253d237bc5b93",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/04-other-envelopes-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/04-other-envelopes-red.txt",
+      "source_sha256": "bf68b9b56a245730afef2ba2bd26110117c0f81a145b2825366a5638ef213bc9",
+      "published_sha256": "1f35a39c8945695227d2b6e6e1719d5d55c72372833492b8d4e3a4f2f7f66748",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/05-typed-tools-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/05-typed-tools-green.txt",
+      "source_sha256": "de37feabd34009f0327864be97c1fc4f09475a7d2b9cec601bfd52e4d03ae284",
+      "published_sha256": "2d01e3b89bdb52cd68594eaf9661ccac6895a43d764c77d3a0d6a5ee4eebb9b9",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/05-typed-tools-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/05-typed-tools-red.txt",
+      "source_sha256": "65ede30341aed56c66b47f90f776d34be6b5f229eb33c6d22581777241000e10",
+      "published_sha256": "f4c37e7de4cfc88ee68f37fc27fb947ad48ecc966d5a8e6a094c2b75fa31ba99",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/06-tool-limits-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/06-tool-limits-green.txt",
+      "source_sha256": "6b27ec8b7da377cd9a9ec528bc5dfe5031421490c08efe518060a9a26c80a6de",
+      "published_sha256": "c8b6d54b26b51d71f3405aeeb995f4e742466841d8b64ef2803246406bba4e14",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/06-tool-limits-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/06-tool-limits-red.txt",
+      "source_sha256": "124d7f47227e1fceb40e8a3b4417b7f3964a6252200e16011b589d2a438fd2ba",
+      "published_sha256": "c5bfa63b68dbef61e3544fc7562316106116a9f6406ffd052bc1c4904cc725cd",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/07-conversation-gates-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/07-conversation-gates-green.txt",
+      "source_sha256": "96bec2a5cd2d5f7538bec7f26bd66e921b2431716e165bb0ef443bc8c1fb7216",
+      "published_sha256": "9c962e7636fa8d40e653e71180057ced0699211128f2008df929c34ea5c85292",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/07-conversation-gates-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/07-conversation-gates-red.txt",
+      "source_sha256": "1f560c33ec3cb7ea5d81697088bf224221429158b109aa4856ea80e510d914b3",
+      "published_sha256": "0fb35132a54837f3d9803d4bfb6a614599774b3134e9297602fab6f2654e81b8",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/08-project-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/08-project-green.txt",
+      "source_sha256": "6279868bb0c84b449c37f1f8ef21d7d68233a5e494fdf1ee8040c297899b52ab",
+      "published_sha256": "f30a7f525fcc362a5e7cbebb9d42bd9f62985c5b2ec6690f71ee588b6e6d7b55",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/08-project-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/08-project-red.txt",
+      "source_sha256": "50cfc0e8ec241da4cdf26bec6423d4050f271e0eee7559102c004f353fa6469b",
+      "published_sha256": "2cb778c732782badfb44fbb606bc000614bb659d9733d577e2d5fcb16a3d52aa",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/09-live-manual-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/09-live-manual-green.txt",
+      "source_sha256": "59247b67e3189b71966f89ab7e2b645ac416fa542b37f8693b1d19abfef8b446",
+      "published_sha256": "2944605963dc78ed01a07f74d155c2a6d635c86901d305bbb2bcdf9595ac426f",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/09-live-manual-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/09-live-manual-red.txt",
+      "source_sha256": "22301cea36074e4caa8d3c72f73c33699575baa9dc68a64ba270dae5d8f554b1",
+      "published_sha256": "4b2db51aae0ce88e588a5cdadda2fa705dac984ab36e7dd65cf006765e4b4fea",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/10-prechunk-source-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/10-prechunk-source-green.txt",
+      "source_sha256": "2e61a9c78a1c31e37d03a458d7299dadfeb10d726588b92991f6bfea7390243d",
+      "published_sha256": "7473726eb78926b14ea6c363a7efff4fd060b0d244f9597c99e39e14b30c12d5",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/10-prechunk-source-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/10-prechunk-source-red.txt",
+      "source_sha256": "1c25a5cdd26bcde8abaf711b5478726631176018fb678aa1b681f8d4f6a3abd2",
+      "published_sha256": "59afb0d2bfaec428c9c85171c4cece31a35bb1802005643631341feaac2e4924",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/11-mcp-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/11-mcp-green.txt",
+      "source_sha256": "094197800915de92e0621a7335fd2fb9a81c3efa7155239e18d28779d367289d",
+      "published_sha256": "cb38de63bae7e4988458a29c149de4af4e0e035cd2a134c8ba9313095a04b5e7",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/11-mcp-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/11-mcp-red.txt",
+      "source_sha256": "55952a1a7bd10800a4838ebc4686fadefad1ca5a3480c89eac9f6b2cbfcfee1c",
+      "published_sha256": "7e08b32c34e027417a42cd57ca047fb133f1f4f1286eb38d2ecd57aaa8047cc5",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/12-structure-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/12-structure-green.txt",
+      "source_sha256": "1ddb7dba56818cfcb2470913d62588439b7a3413e6ee7216cc0d502a85d21aa9",
+      "published_sha256": "b8d382e98aec77c0c04f80c2557e45785a10dec9551217f73d810848c4eeb960",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/12-structure-red-corrected.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/12-structure-red-corrected.txt",
+      "source_sha256": "16980fabfdde1276bc3b049325020be95411d0871bf488571a082497e8d749d0",
+      "published_sha256": "d45df0fabbb107d5a55f5cf01c17234c9f8bb2709ba1a22b79efb60ade82cf8f",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/12-structure-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/12-structure-red.txt",
+      "source_sha256": "40f9e1ef2a3f258eab73702f1151985828cf8a221163690d4bda0369c12ae38f",
+      "published_sha256": "85e49158ba57c467c2eccba3247293ea45b0b15d623b9810f2b8cc86acc2f98c",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/13-shadow-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/13-shadow-green.txt",
+      "source_sha256": "daee1b198dcd35810f6bc927d9778058335329fd7ece1d9a554981ce15ce068f",
+      "published_sha256": "fb24240d06699fd9952a27cf642f48768399274c09bb473e88afa04d3f66c5f6",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/13-shadow-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/13-shadow-red.txt",
+      "source_sha256": "8ee47079337e89aa68a37d42299575dd7b0733c7b95a0ce2c9526c951afd5e59",
+      "published_sha256": "c7eedde60cd11aea98f93d7f8c85d074b1e62a2c2dc07511406c4bf06b84a6dc",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/14-refusal-boundaries-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/14-refusal-boundaries-green.txt",
+      "source_sha256": "57c3792a8915230e9ee0c7bc46e06b88db2543cbb1ec7b782addef1b7a56ad6a",
+      "published_sha256": "387a42e520f9ec5e1235cae6a07a9ef7f69dea1133f9b7960faa63409dd16241",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/14-refusal-boundaries-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/14-refusal-boundaries-red.txt",
+      "source_sha256": "ab1b1cf318ebe77dad8a98b8c54af0ecec09c92de3bc1ff5f41645f7b0a5b150",
+      "published_sha256": "6ede0373674237ba02b42ab80b7c3e6c2035222687325d5ee3641da85bb4ec06",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/15-source-context-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/15-source-context-green.txt",
+      "source_sha256": "b0559c1b0ea39124862646222834bbdefb2cc005e9ee113c6887e9b035b3293f",
+      "published_sha256": "dc8af583223bf9f82474161fa2726225475f12b3b0e694f34778bb5a0336e35a",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/15-source-context-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/15-source-context-red.txt",
+      "source_sha256": "f0e81586f7fe7f9d652b752a17d5d2160c635b58bdf3181d27d353467ffc7941",
+      "published_sha256": "6c5c9613eb9cae9281d2cee8b4f62ec3e93109d1aeccbdac4a9d76096a43d50f",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/16-media-fields-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/16-media-fields-green.txt",
+      "source_sha256": "8988e25dd03d6de891f9f068de7d666a367142d6b9c1e596cecd69c36fd4d93f",
+      "published_sha256": "710f21ad556c31c3ad0b44845ab46ac59a1068f3bae37640ca7633aa27b56f6d",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/16-media-fields-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/16-media-fields-red.txt",
+      "source_sha256": "fe27f26aed2c45b4e9939acfa98740b319355c8367bf17c36f1a78517a1d4f60",
+      "published_sha256": "4fd85cbb01cb04ca52f6833454b9fe7b22cb42ce128f9281d261d28b33c6d43c",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/17-marker-fragments-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/17-marker-fragments-green.txt",
+      "source_sha256": "0201cf212044913b585ea479095413dbe9795762cee7c9f560d6486559a863a4",
+      "published_sha256": "ce6cf14a75fa1be4d129bcf873d5ae66f8993c2950dce2af5c230682b311c1a1",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/17-marker-fragments-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/17-marker-fragments-red.txt",
+      "source_sha256": "b60d9442ef3619d27101bb52608bbac433f00821d7b5760a7e25adbc5cf81e3e",
+      "published_sha256": "5faa1e23b5ab338112c734f69ee79f8e4b6aaac7ece966ee681fca5e6a7f099b",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/18-session-families-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/18-session-families-green.txt",
+      "source_sha256": "efee44d76a2a119454d218acb94da587f2c1c4642acd5e4a37f51ea03956fb32",
+      "published_sha256": "49175f5c4127f9575089ec110cd505723c13563114e23740719c091c78d0b27f",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "evidence/tdd/18-session-families-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/history/evidence/tdd/18-session-families-red.txt",
+      "source_sha256": "9c0c13c113dd155a3f2587c176cce40b2621392c0b94f3f93892358e488191e7",
+      "published_sha256": "3cedd7fd94f7da26901701ac9833beeb0a1b3d4b9aa1a61e6d74d8d51d0ab23d",
+      "redacted": true
+    },
+    {
+      "source_snapshot_path": "FINAL_REPORT.md",
+      "published_path": "docs/reviews/ingestion-safeguards/history/FINAL_REPORT.md",
+      "source_sha256": "2d156c77d61de38e7470e41a4026ccd1f2169f48f4da83dcedd0f28d24e73dd7",
+      "published_sha256": "e7af6e575c469fe5c3cd26382f3701930cc7667d26cc7ca5d33d039f6be3add7",
+      "redacted": false,
+      "relative_links_rebased": true
+    }
+  ],
+  "production_files": [
+    {
+      "path": "mempalace/ingestion.py",
+      "original_source_sha256": "e8501eb8f1b831d7e738a642794ac3c85ce676fd4eb53ebcaacc4274065eb259",
+      "published_source_sha256": "7bf54e34a966df15d8c37603b1a0c13ddb66fdb87add10b0f47c02b632ce9ae5",
+      "ast_equivalent_to_original_implementation": false,
+      "initial_published_source_sha256": "82885218cc99a065aee35a98b2b83f9c5816d57919b50b82b04c6bc0cb6ccd06",
+      "ast_equivalent": false,
+      "publication_review_fix": true,
+      "initial_publication_ast_equivalent": true
+    },
+    {
+      "path": "mempalace/ingestion_audit.py",
+      "original_source_sha256": "d2c52869bcf8affc23b30ebbc7ac4b8be944fdb162c5c9ea6f4ce330b3f3bba8",
+      "published_source_sha256": "9aadcec63ccd80a822981d903a51d9e0d20a8997eca7992c98a4cacc8ebd8465",
+      "ast_equivalent_to_original_implementation": true,
+      "initial_published_source_sha256": "9aadcec63ccd80a822981d903a51d9e0d20a8997eca7992c98a4cacc8ebd8465",
+      "ast_equivalent": true,
+      "publication_review_fix": false,
+      "initial_publication_ast_equivalent": true
+    },
+    {
+      "path": "mempalace/normalize.py",
+      "original_source_sha256": "339d484e77caa694a6bb4b9e226f6624fc2d9ffd1fec278de4a87fd81fac5890",
+      "published_source_sha256": "792886f98151efb0ab045d7d6d74fa81dfeb92015b4370b4dafdf1fb1c158543",
+      "ast_equivalent_to_original_implementation": false,
+      "initial_published_source_sha256": "c24d625e09d5eb7d8a03e2fbd599bb57c0c8dc728d6f6fe49f21f751bf42aba4",
+      "ast_equivalent": false,
+      "publication_review_fix": true,
+      "initial_publication_ast_equivalent": true
+    },
+    {
+      "path": "mempalace/convo_miner.py",
+      "original_source_sha256": "3a53e511c75dfb921cdeae841347f10e4d63eba142515cfd87a3487fc187cc67",
+      "published_source_sha256": "8cf66d212e2cceab3abb49652af260c2287970c91674e065b92abfb4492ac8e0",
+      "ast_equivalent_to_original_implementation": true,
+      "initial_published_source_sha256": "8cf66d212e2cceab3abb49652af260c2287970c91674e065b92abfb4492ac8e0",
+      "ast_equivalent": true,
+      "publication_review_fix": false,
+      "initial_publication_ast_equivalent": true
+    },
+    {
+      "path": "mempalace/miner.py",
+      "original_source_sha256": "67ef122290f7921990362af94e68571621bbdd47d7554cf69747f05e491dd687",
+      "published_source_sha256": "15b2d7b7ff55eb4d1a4a4d6721db2a31d84a9957cdee661393a06f765e470cfb",
+      "ast_equivalent_to_original_implementation": true,
+      "initial_published_source_sha256": "15b2d7b7ff55eb4d1a4a4d6721db2a31d84a9957cdee661393a06f765e470cfb",
+      "ast_equivalent": true,
+      "publication_review_fix": false,
+      "initial_publication_ast_equivalent": true
+    },
+    {
+      "path": "mempalace/mcp_server/tools_write.py",
+      "original_source_sha256": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+      "published_source_sha256": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+      "ast_equivalent_to_original_implementation": true,
+      "initial_published_source_sha256": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+      "ast_equivalent": true,
+      "publication_review_fix": false,
+      "initial_publication_ast_equivalent": true
+    },
+    {
+      "path": "mempalace/mcp_server/tools_diary.py",
+      "original_source_sha256": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+      "published_source_sha256": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+      "ast_equivalent_to_original_implementation": true,
+      "initial_published_source_sha256": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+      "ast_equivalent": true,
+      "publication_review_fix": false,
+      "initial_publication_ast_equivalent": true
+    }
+  ],
+  "note": "Historical logs redact local workspace and private-host references; historical report links were rebased and diagnostic whitespace preserved. Initial staging was Ruff-only and AST-equivalent. Current ingestion.py and normalize.py contain semantic corrections from the independent failed review and intentionally differ from the delivered snapshot AST. Other production modules remain AST-equivalent.",
+  "publication_review_artifacts": [
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/01-markers-green.txt",
+      "published_sha256": "ea488281ed127f24cd9ab8ce2337992586e774cb738dd780c95d756cf60c0ade",
+      "source_snapshot_path": "test-tmp/review-fixes/01-markers-green.txt",
+      "source_sha256": "b553c736ed0fd26d2737ec0eeb634acb9f470a6a8930665c307df274595bef4e",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/01-markers-red-assertions.txt",
+      "published_sha256": "93eb1cea444330c3c343e2ebce45219146e3a1eec6a103a342de2f4c16ddad46",
+      "source_snapshot_path": "test-tmp/review-fixes/01-markers-red-assertions.txt",
+      "source_sha256": "770acb0f0f7a1bc2a2183e01f3c740c33be1941991e7d0568ae8f94f7f856635",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/01-markers-red-corrected.txt",
+      "published_sha256": "c2f0c0ef3e82c0ade891e0698c7ed387638c1a7d6ded3197738f9acd1c98d1ba",
+      "source_snapshot_path": "test-tmp/review-fixes/01-markers-red-corrected.txt",
+      "source_sha256": "33517b5273fd4f6143f116298baa13e99d50b2ae52c64abbb39793ed0ce45d51",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/01-markers-red.txt",
+      "published_sha256": "d2f9255b56322df3f0dbcfd1562a8e483245d16daa415a516c8f243b485a2da3",
+      "source_snapshot_path": "test-tmp/review-fixes/01-markers-red.txt",
+      "source_sha256": "00908ea4feeb9b6d35298311b41cb21abbede2f8cf5e955936ca62d8d402f1a1",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/02-js-literals-green.txt",
+      "published_sha256": "960d9ff950217274e08f439773047c2d4db097bb963fd6832347d44b0b9dc461",
+      "source_snapshot_path": "test-tmp/review-fixes/02-js-literals-green.txt",
+      "source_sha256": "8579060b15e0db5cd0e943e10ca0d96f318bd4b459aadc05754a232bdef0de7e",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/02-js-literals-red.txt",
+      "published_sha256": "784e1c5c0fbb6fbc7bb6520287d7021bd0774f6545ecc358d55921c03e361445",
+      "source_snapshot_path": "test-tmp/review-fixes/02-js-literals-red.txt",
+      "source_sha256": "27f3c565fa5acc835b129990ea1acc701079a7341ae10b1d26ca6f1ee556fd91",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/02-parse-errors-green.txt",
+      "published_sha256": "149e20a3944c98709bc2c5ef5feb8218bd6c25813702a078a647172c0353b34e",
+      "source_snapshot_path": "test-tmp/review-fixes/02-parse-errors-green.txt",
+      "source_sha256": "8929b2e0d09cf8e6d4e67b09734fd32a3dc172395dd9d5bc86ec79f4a3ada125",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/02-parse-errors-red.txt",
+      "published_sha256": "f5166805840d403c5025a4f40cf52fa3b65f74706b09b8c18514c939055aa2df",
+      "source_snapshot_path": "test-tmp/review-fixes/02-parse-errors-red.txt",
+      "source_sha256": "7bfa1d38f7f72d427342d1523d60d5a565f29a1079761c63ea9fb38bb37eaebb",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/03-focused-new-green.txt",
+      "published_sha256": "d67ed62e896871c274e7da14d53be16f06661f9e2d2494834fbc9a99beca1ada",
+      "source_snapshot_path": "test-tmp/review-fixes/03-focused-new-green.txt",
+      "source_sha256": "c4a1877627f1dd538ae7ebc7435af73b0477d25ff8dd84016843bf73d3a1e2c8",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/03-ruff-check.txt",
+      "published_sha256": "037f3ef5b78565d4ca5c2e866338b486c47f11a129c6f67e48cb56765ee8a168",
+      "source_snapshot_path": "test-tmp/review-fixes/03-ruff-check.txt",
+      "source_sha256": "016a12500f36826f4b7bf286ba35a289df9c939240f1e437e19addd89075bbe7",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/03-ruff-format.txt",
+      "published_sha256": "862bf81fc31f1b3c6ff9de9726c63664753324f8aa2c998a7774386473ed7610",
+      "source_snapshot_path": "test-tmp/review-fixes/03-ruff-format.txt",
+      "source_sha256": "2635d349cf910d3fda8eb62532bfa40e80f43575c9f3f401544accf028707e9b",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/04-ruff-format-check.txt",
+      "published_sha256": "f1a59674b73e36d46a926503b87c660535aa1a0401106753c966e704e20fec10",
+      "source_snapshot_path": "test-tmp/review-fixes/04-ruff-format-check.txt",
+      "source_sha256": "78646ad99c6e5c19183ff18c32566a41a6ddbfc4687a32df470f6416db28d519",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/04-safeguards.txt",
+      "published_sha256": "cfab5e2abae8f1c04eef04485d7cb93393117619a204a459683858cc8b204c81",
+      "source_snapshot_path": "test-tmp/review-fixes/04-safeguards.txt",
+      "source_sha256": "3e183779a10884f26d9e50698d2414c20f1900b7d2afe37b888fe481eaeaff89",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-focused-final.txt",
+      "published_sha256": "b03b386098243470765c5e3b56b3e16ec3533994c61392602f6c0546ee2fb5b9",
+      "source_snapshot_path": "test-tmp/review-fixes/05-focused-final.txt",
+      "source_sha256": "0265ca80880093198d0bbb5ae0f73ab600d49935d89628709e74c6c04ad042b0",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-ruff-check-final.txt",
+      "published_sha256": "037f3ef5b78565d4ca5c2e866338b486c47f11a129c6f67e48cb56765ee8a168",
+      "source_snapshot_path": "test-tmp/review-fixes/05-ruff-check-final.txt",
+      "source_sha256": "016a12500f36826f4b7bf286ba35a289df9c939240f1e437e19addd89075bbe7",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-ruff-format-check-final.txt",
+      "published_sha256": "f1a59674b73e36d46a926503b87c660535aa1a0401106753c966e704e20fec10",
+      "source_snapshot_path": "test-tmp/review-fixes/05-ruff-format-check-final.txt",
+      "source_sha256": "78646ad99c6e5c19183ff18c32566a41a6ddbfc4687a32df470f6416db28d519",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-ruff-format.txt",
+      "published_sha256": "4e591ce2793a1377e01e319f29ab8d809b2b4f95e2b34fbcdbf60d826377b95e",
+      "source_snapshot_path": "test-tmp/review-fixes/05-ruff-format.txt",
+      "source_sha256": "d580c3348a9af5636afd0eaddff5c72ee623f8d87031067d9c9de919e473a50b",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-safeguards-final.txt",
+      "published_sha256": "ab1215d365fb10edbbfcf203ab28af0d887555b991a6977a662f1eed796e9466",
+      "source_snapshot_path": "test-tmp/review-fixes/05-safeguards-final.txt",
+      "source_sha256": "a964d5f3b17c5f561b7c3909c8ee1c1a4e484dce2cc358699bb423551707f6f4",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-tool-format-compatibility.txt",
+      "published_sha256": "6b8a8479c1543f4de440ffd9957253133653628d2fc0a6ea1e69527bca19ae24",
+      "source_snapshot_path": "test-tmp/review-fixes/05-tool-format-compatibility.txt",
+      "source_sha256": "61bc0b28364f877641760d71ff70fb1c5b5aaac6d2f94207816ba37d6d415a2d",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/06-tested-source-sha256.txt",
+      "published_sha256": "b40af1b15ed831bce3183abb95d9d3d14b84ffe558bee3e2e073e4e7a36f0711",
+      "source_snapshot_path": "test-tmp/review-fixes/06-tested-source-sha256.txt",
+      "source_sha256": "daa08333a5ae11ff95a7bc5a03d99db7b172e33ffac72c267f2f7f292af86d34",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/REPORT.md",
+      "published_sha256": "cbe9d876e644dd9e230bbc53ebe889303eaa597b46d57212170dfca23cdf2e3f",
+      "source_snapshot_path": "test-tmp/review-fixes/REPORT.md",
+      "source_sha256": "ec1748118f7a3fc8daf8c92f209beaefc369f927a5dea0ad9bf530ff6be8e121",
+      "redacted": true
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/parent-compileall.json",
+      "published_sha256": "fcbb7389d837ec2256d31661658e44a35766b4f3fb65c421eebcb3c6bcc279fe",
+      "kind": "parent-run actual output with path redaction"
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/parent-integration.json",
+      "published_sha256": "961c004417c65216b08c8f4bd8f8184e2de6c743463d58c5b0343a4d19df65e6",
+      "kind": "parent-run actual output with path redaction"
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/parent-ruff_check.json",
+      "published_sha256": "e17c50a91a67efd3b9f75fa9435360e120fb5fdde4728a6e2ebf1d98c912710e",
+      "kind": "parent-run actual output with path redaction"
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/parent-ruff_format.json",
+      "published_sha256": "10d4615cac4ad801906584499e3a4d7e2e29de612a075f033b439a9c266eaab4",
+      "kind": "parent-run actual output with path redaction"
+    },
+    {
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/parent-shadow_demo.json",
+      "published_sha256": "23a4e9197069b248bd397ccce2f6f21056deef3bb051555a53db2712cef55783",
+      "kind": "parent-run actual output with path redaction"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-fixes/05-diff-check-final.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-fixes/05-diff-check-final.txt",
+      "source_sha256": "b6a06f0a142cf1b86c0eea44a8c18b5f340fa4041206d4e4445d259fb3efa40e",
+      "published_sha256": "775a19ff1f54e09f8296dfdaef6702e4ae9f7c0e32f0aa547c26bc94bdd9f036",
+      "redaction": "local filesystem prefix only; recovered missing linked check record"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/second-review-delivered.json",
+      "published_path": "docs/reviews/ingestion-safeguards/SECOND_REVIEW.json",
+      "source_sha256": "681e032bda284f21e3532d514ffd6540b7cc5fe1626e6a299bb726c3bc728914",
+      "published_sha256": "e50f4b614a7013689074db92665a117f1585e2810464c793d1e11be1d1fc790b",
+      "redaction": "private local verification-directory prefix in summary only; complete delivered review values otherwise retained with valid JSON escaping",
+      "delivery": "delayed completion notification for deleg_43523e83; older reviewed freeze, not the final corrected tree"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/third-review-delivered.json",
+      "published_path": "docs/reviews/ingestion-safeguards/THIRD_REVIEW.json",
+      "source_sha256": "da396b6393b5ab08bcefec01f77224c0416e3384372ead5c67064f0dcf8d2586",
+      "published_sha256": "da396b6393b5ab08bcefec01f77224c0416e3384372ead5c67064f0dcf8d2586",
+      "redacted": false,
+      "delivery": "complete delayed verdict for deleg_1bb66552; rejected final frozen patch 259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50"
+    }
+  ],
+  "current_review_patch": {
+    "patch_sha256": "19502332eb23d6cda362573fb3714e77aadc467eceef4c5624a478c976fc7a0c",
+    "patch_bytes": 160025,
+    "source_sha256": {
+      ".github/workflows/ci.yml": "92182db3ba3f458deb9866f5c257ae40552182e49b6b68fd95bc8679462b261f",
+      ".github/workflows/docker-publish.yml": "e4a19098ad123c395a706902b41c9790ec2f372717aab08bf57f9ab00cfdd3e0",
+      "mempalace/convo_miner.py": "8cf66d212e2cceab3abb49652af260c2287970c91674e065b92abfb4492ac8e0",
+      "mempalace/ingestion.py": "7bf54e34a966df15d8c37603b1a0c13ddb66fdb87add10b0f47c02b632ce9ae5",
+      "mempalace/ingestion_audit.py": "9aadcec63ccd80a822981d903a51d9e0d20a8997eca7992c98a4cacc8ebd8465",
+      "mempalace/mcp_server/tools_diary.py": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+      "mempalace/mcp_server/tools_write.py": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+      "mempalace/miner.py": "15b2d7b7ff55eb4d1a4a4d6721db2a31d84a9957cdee661393a06f765e470cfb",
+      "mempalace/normalize.py": "792886f98151efb0ab045d7d6d74fa81dfeb92015b4370b4dafdf1fb1c158543",
+      "scripts/record_check.py": "633286d9ec11d1ead0cee2bab2e5ab03bc91748b4ca3e8b9bf95ac6f5899c044",
+      "scripts/shadow_demo.py": "26fe5b38da4994ca6da4d9907bf845a3afaada2fffcd0458522e0f4037f6505b",
+      "tests/ingestion_safeguards/conftest.py": "6f229e6b374f6451fb04dd4e9f77241427111e5df5b87d48ff12fd41968ba522",
+      "tests/ingestion_safeguards/test_ingestion.py": "ea09870cc5a76808e14ecf1ad636b2fcef015c8424bfa08ec24af168c5c0fc64",
+      "tests/ingestion_safeguards/test_mcp_admission.py": "d70484ad4a8a295bfad4d4e34369357b4e505b8c60b217fba1f2b53c12cafb55",
+      "tests/ingestion_safeguards/test_review_fixes.py": "044d21ac05a1187c52c0fb399628d3a7223f58b9cea5a1bd3b43b064413e2f38",
+      "tests/ingestion_safeguards/test_review_second_fixes.py": "996fe59873c74b355094df4ec3de0a277162085251e5ffd4bada5f562b667fea",
+      "tests/ingestion_safeguards/test_review_third_fixes.py": "20c52d04ebf21e3a5cf53f127aa6d649c655989232773fa424ed231a20ca031e",
+      "tests/ingestion_safeguards/test_shadow_audit.py": "9310e3489f664500a2841e157cc8b88417001b75862867bdcbfa308580a992ec",
+      "tests/ingestion_safeguards/test_writers.py": "59f5622894a485d243e9bdf2290fef9a54cb9a6f5f354095a81bf538a97620f4",
+      "tests/test_convo_miner_unit.py": "399cc112ae6d529010899ca31f198b81256e76d3d9a27ff82ad87d69df8796de",
+      "tests/test_normalize.py": "dbc1f5822b77dd2142355dc7629a7bd5423322e981c25892148b2842135cc31e"
+    },
+    "published_patch_path": "docs/reviews/ingestion-safeguards/review-third-fixes/FROZEN_SOURCE.patch",
+    "freeze_method": "Explicit v3.11.0 release-base to corrected working-tree source/tests/scripts/CI diff, including runner compatibility; all regression files tracked",
+    "status": "Corrected R1-R5 candidate; user authorized committing, pushing and merging into fork main. No new independent final-patch or Claude approval claimed.",
+    "previous_corrected_patch_sha256": "a1709af18080e4d27b79df575e5c02d888cbb3c82433a7de6f26d70895bf2c67"
+  },
+  "review_status": "User authorized main integration after the third correction. R1-R5 and additional candidate-review edge cases have regressions; selected checks are documented separately. Prior failed reviews and fingerprints are historical. Deployment remains blocked by accepted-replacement exposure and uncovered writers; requested Claude review was not run.",
+  "historical_first_correction_patch": {
+    "patch_sha256": "3bb5a473c089cd5fda6f0f8247b4ca8af0be3badb2711acbada2b0d938068398",
+    "source_sha256": {
+      "mempalace/convo_miner.py": "8cf66d212e2cceab3abb49652af260c2287970c91674e065b92abfb4492ac8e0",
+      "mempalace/ingestion.py": "a672b960f1f70b8539a477cad40153ab8849f91b4612ab3ce22500ca9d858842",
+      "mempalace/ingestion_audit.py": "9aadcec63ccd80a822981d903a51d9e0d20a8997eca7992c98a4cacc8ebd8465",
+      "mempalace/mcp_server/tools_diary.py": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+      "mempalace/mcp_server/tools_write.py": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+      "mempalace/miner.py": "15b2d7b7ff55eb4d1a4a4d6721db2a31d84a9957cdee661393a06f765e470cfb",
+      "mempalace/normalize.py": "c714601472f7355e97f148527d16510ad511066d48c7097ba961e34aac22e930",
+      "scripts/record_check.py": "633286d9ec11d1ead0cee2bab2e5ab03bc91748b4ca3e8b9bf95ac6f5899c044",
+      "scripts/shadow_demo.py": "26fe5b38da4994ca6da4d9907bf845a3afaada2fffcd0458522e0f4037f6505b",
+      "tests/ingestion_safeguards/conftest.py": "6f229e6b374f6451fb04dd4e9f77241427111e5df5b87d48ff12fd41968ba522",
+      "tests/ingestion_safeguards/test_ingestion.py": "ea09870cc5a76808e14ecf1ad636b2fcef015c8424bfa08ec24af168c5c0fc64",
+      "tests/ingestion_safeguards/test_mcp_admission.py": "d70484ad4a8a295bfad4d4e34369357b4e505b8c60b217fba1f2b53c12cafb55",
+      "tests/ingestion_safeguards/test_review_fixes.py": "044d21ac05a1187c52c0fb399628d3a7223f58b9cea5a1bd3b43b064413e2f38",
+      "tests/ingestion_safeguards/test_shadow_audit.py": "9310e3489f664500a2841e157cc8b88417001b75862867bdcbfa308580a992ec",
+      "tests/ingestion_safeguards/test_writers.py": "59f5622894a485d243e9bdf2290fef9a54cb9a6f5f354095a81bf538a97620f4",
+      "tests/test_convo_miner_unit.py": "399cc112ae6d529010899ca31f198b81256e76d3d9a27ff82ad87d69df8796de",
+      "tests/test_normalize.py": "dbc1f5822b77dd2142355dc7629a7bd5423322e981c25892148b2842135cc31e"
+    }
+  },
+  "second_correction_artifacts": [
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/01-a-existing.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/01-a-existing.json",
+      "source_sha256": "26d7f0e522b66306a081ffe07e4f2ff0da5f1fa3c835b93c265f2ab10a9a720c",
+      "published_sha256": "409eb6ff9ce594e00453ce86a6ee5cf5ca51ca0d2ada6f49a0d50e0ba0ab8ee4",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/01-a-existing.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/01-a-existing.txt",
+      "source_sha256": "ed02f0e0056135048fa6934ff8aa61b7d38b3b584b4ac13d09205fd3d0576860",
+      "published_sha256": "3f63f1d1b28d80e1593698a069caf1dfd5bceb3d0779c971947479e4b53d0256",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/01-a-green.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/01-a-green.json",
+      "source_sha256": "50629e29ee00bfcdddf384b7eac1c7cb2be7de3de6e7dd14111f88c18bd6993b",
+      "published_sha256": "2d92d864d8ecab4ece6e835fd3cd3343f4ea05c4a2e5bb4747503d9bf856d0a9",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/01-a-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/01-a-green.txt",
+      "source_sha256": "3274015417e134d9693ac771203efd5d970ed79a9054d41c850636e66bfa9c3a",
+      "published_sha256": "0007c68fbcd0afcd36fece1f82af6cb438ca921c8ddcd9dc85b97187d5da2a1d",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/01-a-red.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/01-a-red.json",
+      "source_sha256": "f34315156de8e6ddbe2480657925ecf37beb7eebd00b3c56810ca3567ba0eaf7",
+      "published_sha256": "b24a2c5150db0461fa190d8d22d612077e8a9d2a1603eef03bd01c17097f3630",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/01-a-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/01-a-red.txt",
+      "source_sha256": "3ddc93e3e8a40a1d4875b8ac910f91f3004c001549884f491454497104f93230",
+      "published_sha256": "e18a1cdaf5f4da3155f4f053a0c4d6f6f3f342529de9c83cd24812f388b86e0d",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/02-b-existing.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/02-b-existing.json",
+      "source_sha256": "a0978ef83bb75032d96d45354139a371b7dbc5852cad2a8c38e6a5cce4372c63",
+      "published_sha256": "fcddc517b1e1fccf1288fc72a8c8c4267f1567447f679657d91dd989010e3420",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/02-b-existing.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/02-b-existing.txt",
+      "source_sha256": "263b3cd284b3a069abc746f5f53f62d4ace7e3582464d49e1472d4cc93603878",
+      "published_sha256": "a6e21994664a2317cd6229b1a5e2848503ad115e07e0ed8d9d244da79ea1b037",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/02-b-green.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/02-b-green.json",
+      "source_sha256": "3da7d3fbd8509cc2e88bc9741a2c147b6f7e9511228e1f05c3628d1ab174fce0",
+      "published_sha256": "44b70d554c453e8076ec5c5a9ee22ea5982c32a5d653e0ddd80b60f0714b38e3",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/02-b-green.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/02-b-green.txt",
+      "source_sha256": "d69c3be1b528b57fdb64175324e694a7a0d8f7257eba8813bc9fb230a6153147",
+      "published_sha256": "9b78a2134b9dce9b534330030545c3634aa55314d37a280a59661516007b3eeb",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/02-b-red.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/02-b-red.json",
+      "source_sha256": "dff1552ef0b9955139eb6be1adbbd5bd8530018219190437808dc89c982d826d",
+      "published_sha256": "44bbdbfaece6ad09bd3b7cbc3861533f10a04fd444e4eab51a6cc64c2bbf2f87",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/02-b-red.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/02-b-red.txt",
+      "source_sha256": "a8121eeed00cab3d725d265aa199f871aff65151e48bc08e1ae114ea1a3af450",
+      "published_sha256": "4976c5d91044d034ce7e6ed7d51222a6bc2f74a918dd927d65057ac8cfb64a57",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-ruff-check.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-ruff-check.json",
+      "source_sha256": "114e67cd3cb9fae1b9127d5129b18357e2e5d724af879cfb33859b5c660b81be",
+      "published_sha256": "63743a10e53e102a0e9e0bd7906d7a1244f31d7b20c9f43e9be779f877766ad7",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-ruff-check.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-ruff-check.txt",
+      "source_sha256": "5e71f0c3278e42225a2e5a040c3bc0d2406b6c2bd4d8ea16c82de3a0940fe075",
+      "published_sha256": "ec7fdc11d9c2b120c9f892279f15322f4ba652d6113491366a9b55c43f6fc30a",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-ruff-format-check.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-ruff-format-check.json",
+      "source_sha256": "51a85719d7af541a859e65e0324cab062865ea9834d92666000d760302f87ec2",
+      "published_sha256": "c734fe31d4aa473a4591e46b2d1ac36fec2e0ab9bb837e5091562d8f4ad63c84",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-ruff-format-check.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-ruff-format-check.txt",
+      "source_sha256": "a0c99b06160d946a3105c0ac257c3db2229a4c5a4540368f17cbdc91cb5775ce",
+      "published_sha256": "1a5ef58735caf077b7f1b1e81f78ff51e182e7346bc58a7a9f53bbaf510f8883",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-ruff-format.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-ruff-format.json",
+      "source_sha256": "a9ba3f30c169d0f6a3c60a5eb14685a0055bf0aab02320fac30eeef3e8434ce0",
+      "published_sha256": "856bb68d179e752829956f5159691fc91c646a8880b3a833d8a8e58864ba8c6a",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-ruff-format.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-ruff-format.txt",
+      "source_sha256": "923f1774ed3e552fa21d4c5f9c730d7bdc822828f967cdd4c13e38456cedb2a5",
+      "published_sha256": "1015d8d1268de5d0cfad8d98ac57af0d4d4030b4feedcfa9c12bd38f44b9ca00",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-safeguards.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-safeguards.json",
+      "source_sha256": "7ef817d4811bce1b5f70f7a77d1715f1ff04a10527ff4d62994bc10284091da8",
+      "published_sha256": "988f75e789047cb5af741d1b237ea58ab484df57c319ab4793ac95cc62816799",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/03-safeguards.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/03-safeguards.txt",
+      "source_sha256": "37edd90f5eb09f1b9c497c9dd8b1b0ff40a57f3c028aa68131d2eac159ae552f",
+      "published_sha256": "3651cf6ce285f61f081ad132943c0d359368603f70afc5a965f56bc88006948a",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/04-final-verification-corrected.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/04-final-verification-corrected.json",
+      "source_sha256": "138239770b04fd0586b95aeeec6bffc79256ddc15765765d28da603f37a5008e",
+      "published_sha256": "dac8f3962de9c659c6acdfce5c226e3ea0ffac493d3f9c8b82519dfcbf567b82",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/04-final-verification-corrected.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/04-final-verification-corrected.txt",
+      "source_sha256": "602380def6790cb7c9666369feb7d14ed357e5ac9811f3b6cf0741c63275406d",
+      "published_sha256": "a7c788b346b43e7021e570c72ec101124cf5e5d44a6b38a35d44c45586a4cf79",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/04-final-verification.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/04-final-verification.json",
+      "source_sha256": "c9a1462bf4d37504cf5d24c384ea11f44824701caae68ddf45f641bad69040bb",
+      "published_sha256": "dc6d58adec43b8fab1640e3038885b2f03b9b0df6474f594d89e9cadd97e552e",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/04-final-verification.txt",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/04-final-verification.txt",
+      "source_sha256": "60da2704b713a34f69c57a4fb3dd122bac2bcca43bf999d3d8175dcd1650602a",
+      "published_sha256": "87b2464c919946cb9fd3a2963d58af7b9cf09377f71d3ed24af71acd5289306b",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/final-source-sha256.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/final-source-sha256.json",
+      "source_sha256": "0e0a00b8c7416fe075b48d484649b919647285fd32f5993185e299d6dc1d3439",
+      "published_sha256": "0e0a00b8c7416fe075b48d484649b919647285fd32f5993185e299d6dc1d3439",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/post-second-review-checks/integration.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/parent-integration.json",
+      "source_sha256": "9001b658230443ea9f6f800e63bdab85d6ec7ea21e65f8deb47209adea2c03fd",
+      "published_sha256": "ef9a74e3850c3aadd9da25e16848a1cae3f59544eac4b56fcd04070317423924",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/post-second-review-checks/ruff_check.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/parent-ruff_check.json",
+      "source_sha256": "54f2d7091c3134ccbad5bc075958057d53e866b81b965aecd9102659d574403e",
+      "published_sha256": "e17c50a91a67efd3b9f75fa9435360e120fb5fdde4728a6e2ebf1d98c912710e",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/post-second-review-checks/ruff_format.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/parent-ruff_format.json",
+      "source_sha256": "c1d3abfcd125a240c91cd4d89ab5b5cda6061ca21eacf9f7f5ecb5f1703348a4",
+      "published_sha256": "605b2c66e3be326b7186db2622e449065b608485aba10ecd1f483eec1f8c9404",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/post-second-review-checks/compileall.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/parent-compileall.json",
+      "source_sha256": "09e7e6c574b9706b7fc2d5a56cfa4b2ecdcc3f5732a85c4effc6a5564366deb1",
+      "published_sha256": "fcbb7389d837ec2256d31661658e44a35766b4f3fb65c421eebcb3c6bcc279fe",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/post-second-review-checks/shadow_demo.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/parent-shadow_demo.json",
+      "source_sha256": "83395ed7f4c5d1236244b79b858224968703dd92723fc7fdbaeebe396ab2ddb5",
+      "published_sha256": "23a4e9197069b248bd397ccce2f6f21056deef3bb051555a53db2712cef55783",
+      "redaction": "local filesystem prefixes only"
+    },
+    {
+      "source_snapshot_path": "test-tmp/review-second-fixes/REPORT.md",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/REPORT.md",
+      "source_sha256": "b803cc05120364ca06129948021da123158bd976a594eb4f0a5c11fc53eed01d",
+      "published_sha256": "d6ea31dd0a6dab65b2f7a1f327f347d15311f0ac0d5291fb8ca53c17d07e721d",
+      "redaction": "local prefixes and local-only initialization link; parent context preface"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/precommit-review-second-fixed.diff",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/FROZEN_SOURCE.patch",
+      "source_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+      "published_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+      "redaction": "none; exact source/tests/scripts freeze"
+    },
+    {
+      "source_snapshot_path": "<private-verification>/third-review-parent-probe.json",
+      "published_path": "docs/reviews/ingestion-safeguards/review-second-fixes/parent-memory-blocker.json",
+      "source_sha256": "4d55e60829c1613d81ae079f0aa4ccfaa1d53df14abf2f525b8a329eee104118",
+      "published_sha256": "4d55e60829c1613d81ae079f0aa4ccfaa1d53df14abf2f525b8a329eee104118",
+      "redaction": "none; fixed synthetic input and bounded probe results only"
+    }
+  ],
+  "third_review_rejected_patch": {
+    "patch_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+    "patch_bytes": 135361,
+    "source_sha256": {
+      "mempalace/convo_miner.py": "8cf66d212e2cceab3abb49652af260c2287970c91674e065b92abfb4492ac8e0",
+      "mempalace/ingestion.py": "c0c538680911650f463c1ddf038c38f580a8ca9e069b4af06b9d40f7d73943d2",
+      "mempalace/ingestion_audit.py": "9aadcec63ccd80a822981d903a51d9e0d20a8997eca7992c98a4cacc8ebd8465",
+      "mempalace/mcp_server/tools_diary.py": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+      "mempalace/mcp_server/tools_write.py": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+      "mempalace/miner.py": "15b2d7b7ff55eb4d1a4a4d6721db2a31d84a9957cdee661393a06f765e470cfb",
+      "mempalace/normalize.py": "c714601472f7355e97f148527d16510ad511066d48c7097ba961e34aac22e930",
+      "scripts/record_check.py": "633286d9ec11d1ead0cee2bab2e5ab03bc91748b4ca3e8b9bf95ac6f5899c044",
+      "scripts/shadow_demo.py": "26fe5b38da4994ca6da4d9907bf845a3afaada2fffcd0458522e0f4037f6505b",
+      "tests/ingestion_safeguards/conftest.py": "6f229e6b374f6451fb04dd4e9f77241427111e5df5b87d48ff12fd41968ba522",
+      "tests/ingestion_safeguards/test_ingestion.py": "ea09870cc5a76808e14ecf1ad636b2fcef015c8424bfa08ec24af168c5c0fc64",
+      "tests/ingestion_safeguards/test_mcp_admission.py": "d70484ad4a8a295bfad4d4e34369357b4e505b8c60b217fba1f2b53c12cafb55",
+      "tests/ingestion_safeguards/test_review_fixes.py": "044d21ac05a1187c52c0fb399628d3a7223f58b9cea5a1bd3b43b064413e2f38",
+      "tests/ingestion_safeguards/test_review_second_fixes.py": "38e75993a573ff9dc5b61fbab9718639feec7adc8835471f0d7eed7af8095b3c",
+      "tests/ingestion_safeguards/test_shadow_audit.py": "9310e3489f664500a2841e157cc8b88417001b75862867bdcbfa308580a992ec",
+      "tests/ingestion_safeguards/test_writers.py": "59f5622894a485d243e9bdf2290fef9a54cb9a6f5f354095a81bf538a97620f4",
+      "tests/test_convo_miner_unit.py": "399cc112ae6d529010899ca31f198b81256e76d3d9a27ff82ad87d69df8796de",
+      "tests/test_normalize.py": "dbc1f5822b77dd2142355dc7629a7bd5423322e981c25892148b2842135cc31e"
+    },
+    "published_patch_path": "docs/reviews/ingestion-safeguards/review-second-fixes/FROZEN_SOURCE.patch",
+    "freeze_method": "HEAD-to-working-tree diff plus explicit untracked regression file; no staging mutation"
+  },
+  "main_integration": {
+    "repository": "groxaxo/mempalace",
+    "source_branch": "fix/opaque-transcript-ingestion",
+    "target_branch": "main",
+    "default_branch_unchanged": "develop",
+    "bootstrap_commit": "d5a5d7a704b0c2e40437bf6a003c12c6dfde6126",
+    "authorization": "User explicitly requested commit, push to main, merge and documentation.",
+    "deployment_authorized": false,
+    "receipt": "docs/reviews/ingestion-safeguards/PUBLICATION_RECEIPT.md"
+  }
+}

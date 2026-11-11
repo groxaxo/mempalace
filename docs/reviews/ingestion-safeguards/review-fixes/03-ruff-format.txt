@@ -1,0 +1,6 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 ruff format mempalace/ingestion.py mempalace/normalize.py tests/ingestion_safeguards/test_ingestion.py tests/ingestion_safeguards/test_review_fixes.py
+
+3 files reformatted, 1 file left unchanged
+
+EXIT STATUS: 0
