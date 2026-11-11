@@ -1,0 +1,29 @@
+{
+  "review_kind": "Independent delegated read-only pre-publication review; not the requested Claude review",
+  "passed": false,
+  "security_concerns": [],
+  "logic_errors": [
+    {
+      "severity": "medium",
+      "file": "mempalace/ingestion.py",
+      "original_lines": "420-425",
+      "title": "Global marker removal silently deletes legitimate source text",
+      "reproduction": "A keep decision with empty omissions for prose or fenced examples containing a literal [ingestion omitted: opaque_transport; count=1] still lost that literal through indexing_text.",
+      "required_correction": "Remove only generated annotations; preserve literal source text in prose, code, configuration and covered writers, including mixed literal/generated cases."
+    },
+    {
+      "severity": "medium",
+      "file": "mempalace/ingestion.py",
+      "original_lines": "233-245",
+      "title": "Malformed-transport detection rejects legitimate source code based on field-name matches",
+      "reproduction": "Valid JavaScript array expression statements containing documented rawOutput or thinking field names were archive-only because JSON parsing failed and a field-name regular expression matched.",
+      "required_correction": "Use explicit transport context or stronger structural evidence; add positive source-literal controls without enabling raw fallback for recognizable malformed transcript/transport envelopes."
+    }
+  ],
+  "other_findings": [
+    "The test-only exec(compile(...)) consumes two fixed repository handler paths, not transcript-supplied code.",
+    "Policy-specific upstream test adaptations were explicit rather than blanket suppression.",
+    "Accepted-replacement delete-before-write and uncovered writers remain disclosed deployment blockers."
+  ],
+  "verification_limits": "Reviewer ran read-only, network-blocked probes and inspected the full staged source/tests/scripts diff. It did not rerun the full suite, modify files, invoke models/services, or perform the requested Claude Sonnet 5.5 / medium review. This is a structured summary of the returned findings, not a raw agent transcript."
+}

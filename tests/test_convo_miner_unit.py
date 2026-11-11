@@ -1124,7 +1124,10 @@ def test_mine_convos_passes_the_directory_it_read_from(tmp_path, monkeypatch):
     transcript.write_text(
         '{"type":"user","message":{"role":"user","content":"'
         + "a conversation long enough to file a drawer " * 6
-        + '"},"timestamp":"2026-04-13T10:00:00Z","uuid":"u1","sessionId":"s1"}\n',
+        + '"},"timestamp":"2026-04-13T10:00:00Z","uuid":"u1","sessionId":"s1"}\n'
+        # This wiring test needs a supported complete session. The previous
+        # one-turn fixture only reached storage through raw-envelope fallback.
+        + '{"type":"assistant","message":{"role":"assistant","content":"I will preserve the directory identity."},"timestamp":"2026-04-13T10:00:01Z","uuid":"a1","sessionId":"s1"}\n',
         encoding="utf-8",
     )
 

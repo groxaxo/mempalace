@@ -1,0 +1,148 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+....................FFFFF                                                [100%]
+=================================== FAILURES ===================================
+____ test_other_recognized_incomplete_envelopes_are_nonindexable[payload0] _____
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-6/test_other_recognized_incomple0')
+payload = '{"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": "FORBIDDEN_OPAQUE_SENTINEL"}]}}'
+
+    @pytest.mark.parametrize("payload", [
+        json.dumps({"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": OPAQUE}]}}),
+        json.dumps({"messages": [{"role": "future-role", "content": OPAQUE}]}),
+        '{"messages":[{"role":"assistant","content":',
+        json.dumps({"history": [{"role": "user", "content": "Incomplete"}]}),
+    ])
+    def test_other_recognized_incomplete_envelopes_are_nonindexable(tmp_path, payload):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "unsupported.json"
+        source.write_text(payload)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:114: Failed
+_ test_other_recognized_incomplete_envelopes_are_nonindexable[{"messages": [{"role": "future-role", "content": "FORBIDDEN_OPAQUE_SENTINEL"}]}] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-6/test_other_recognized_incomple1')
+payload = '{"messages": [{"role": "future-role", "content": "FORBIDDEN_OPAQUE_SENTINEL"}]}'
+
+    @pytest.mark.parametrize("payload", [
+        json.dumps({"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": OPAQUE}]}}),
+        json.dumps({"messages": [{"role": "future-role", "content": OPAQUE}]}),
+        '{"messages":[{"role":"assistant","content":',
+        json.dumps({"history": [{"role": "user", "content": "Incomplete"}]}),
+    ])
+    def test_other_recognized_incomplete_envelopes_are_nonindexable(tmp_path, payload):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "unsupported.json"
+        source.write_text(payload)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:114: Failed
+_ test_other_recognized_incomplete_envelopes_are_nonindexable[{"messages":[{"role":"assistant","content":] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-6/test_other_recognized_incomple2')
+payload = '{"messages":[{"role":"assistant","content":'
+
+    @pytest.mark.parametrize("payload", [
+        json.dumps({"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": OPAQUE}]}}),
+        json.dumps({"messages": [{"role": "future-role", "content": OPAQUE}]}),
+        '{"messages":[{"role":"assistant","content":',
+        json.dumps({"history": [{"role": "user", "content": "Incomplete"}]}),
+    ])
+    def test_other_recognized_incomplete_envelopes_are_nonindexable(tmp_path, payload):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "unsupported.json"
+        source.write_text(payload)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:114: Failed
+_ test_other_recognized_incomplete_envelopes_are_nonindexable[{"history": [{"role": "user", "content": "Incomplete"}]}] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-6/test_other_recognized_incomple3')
+payload = '{"history": [{"role": "user", "content": "Incomplete"}]}'
+
+    @pytest.mark.parametrize("payload", [
+        json.dumps({"type": "assistant", "message": {"content": [{"type": "thinking", "thinking": OPAQUE}]}}),
+        json.dumps({"messages": [{"role": "future-role", "content": OPAQUE}]}),
+        '{"messages":[{"role":"assistant","content":',
+        json.dumps({"history": [{"role": "user", "content": "Incomplete"}]}),
+    ])
+    def test_other_recognized_incomplete_envelopes_are_nonindexable(tmp_path, payload):
+        from mempalace.ingestion import NonIndexableContentError
+    
+        source = tmp_path / "unsupported.json"
+        source.write_text(payload)
+>       with pytest.raises(NonIndexableContentError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE NonIndexableContentError
+
+tests/test_ingestion.py:114: Failed
+___________ test_nested_schema_example_in_config_is_not_a_transcript ___________
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-6/test_nested_schema_example_in_0')
+
+    def test_nested_schema_example_in_config_is_not_a_transcript(tmp_path):
+        text = json.dumps({"example": {"type": "response_item", "payload": {"type": "reasoning"}},
+                           "messages": ["start", "stop"]})
+        source = tmp_path / "config.json"
+        source.write_text(text)
+>       assert normalize_conversations(str(source)) == [text]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_ingestion.py:123: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+mempalace/normalize.py:216: in normalize_conversations
+    split = _try_normalize_json_split(content)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+content = '{"example": {"type": "response_item", "payload": {"type": "reasoning"}}, "messages": ["start", "stop"]}'
+
+    def _try_normalize_json_split(content: str) -> Optional[list]:
+        """Try all known JSON chat schemas, returning each conversation found as
+        a separate list entry (bundle formats) or a single-element list.
+        """
+    
+        content = unwrap_transcript(content)
+        # Extensions are only hints. A .json document can be prose explaining a
+        # format; do not interpret JSON examples embedded in that prose as events.
+        if not content.lstrip().startswith(("{", "[")):
+            return None
+    
+        normalized = _try_claude_code_jsonl(content)
+        if normalized:
+            return [normalized]
+    
+        normalized = _try_codex_jsonl(content)
+        if normalized:
+            return [normalized]
+    
+        # A recognized rollout must never become raw JSON text just because its
+        # conversation schema changed (or its first turn is still incomplete).
+        # Keep this outside the parser so additional supported schemas can return
+        # normally without changing the fallback boundary.
+        if looks_like_codex(content):
+>           raise UnparsedCodexTranscriptError(
+                "Codex rollout contains no complete supported conversation; "
+                "refusing raw JSON fallback"
+            )
+E           mempalace.normalize.UnparsedCodexTranscriptError: Codex rollout contains no complete supported conversation; refusing raw JSON fallback
+
+mempalace/normalize.py:257: UnparsedCodexTranscriptError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_other_recognized_incomplete_envelopes_are_nonindexable[payload0]
+FAILED tests/test_ingestion.py::test_other_recognized_incomplete_envelopes_are_nonindexable[{"messages": [{"role": "future-role", "content": "FORBIDDEN_OPAQUE_SENTINEL"}]}]
+FAILED tests/test_ingestion.py::test_other_recognized_incomplete_envelopes_are_nonindexable[{"messages":[{"role":"assistant","content":]
+FAILED tests/test_ingestion.py::test_other_recognized_incomplete_envelopes_are_nonindexable[{"history": [{"role": "user", "content": "Incomplete"}]}]
+FAILED tests/test_ingestion.py::test_nested_schema_example_in_config_is_not_a_transcript
+5 failed, 20 passed in 0.09s
+
+EXIT STATUS: 1

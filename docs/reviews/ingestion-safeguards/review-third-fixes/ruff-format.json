@@ -1,0 +1,5 @@
+{
+  "command": "ruff format --check .",
+  "exit_code": 0,
+  "output": "402 files already formatted\n"
+}

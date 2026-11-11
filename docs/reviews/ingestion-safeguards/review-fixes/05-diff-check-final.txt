@@ -1,0 +1,5 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 git diff --check -- mempalace/ingestion.py mempalace/normalize.py tests/ingestion_safeguards
+
+
+EXIT STATUS: 0

@@ -2,6 +2,9 @@ import json
 import stat
 from unittest.mock import patch
 
+import pytest
+
+from mempalace.ingestion import MAX_SOURCE_BYTES, TOOL_LINE_BYTES, NonIndexableContentError
 from mempalace.normalize import (
     _SLACK_PROVENANCE_FOOTER,
     _extract_content,
@@ -250,7 +253,7 @@ def test_format_tool_result_bash_head_tail():
     assert "line 19" in result
     assert "line 40" in result
     assert "line 59" in result
-    assert "20 lines omitted" in result
+    assert "[ingestion omitted: tool_lines; count=20]" in result
     # Lines 20-39 should be gone
     assert "line 20\n" not in result
 
@@ -298,7 +301,7 @@ def test_format_tool_result_grep_caps_at_20():
     result = _format_tool_result(content, "Grep")
     assert "match_19.py" in result
     assert "match_20.py" not in result
-    assert "10 more matches" in result
+    assert "[ingestion omitted: tool_lines; count=10]" in result
 
 
 def test_format_tool_result_glob_caps_at_20():
@@ -308,7 +311,7 @@ def test_format_tool_result_glob_caps_at_20():
     result = _format_tool_result(content, "Glob")
     assert "file_19.py" in result
     assert "file_20.py" not in result
-    assert "5 more matches" in result
+    assert "[ingestion omitted: tool_lines; count=5]" in result
 
 
 def test_format_tool_result_unknown_short():
@@ -318,11 +321,11 @@ def test_format_tool_result_unknown_short():
 
 
 def test_format_tool_result_unknown_truncates():
-    """Unknown tool output over 2KB is truncated."""
+    """A long unknown-tool line obeys the UTF-8 byte cap with provenance."""
     content = "x" * 3000
     result = _format_tool_result(content, "SomeTool")
-    assert result.endswith("... [truncated, 3000 chars]")
-    assert len(result) < 2200
+    assert "[ingestion omitted: tool_line_bytes]" in result
+    assert len(result.encode("utf-8")) <= TOOL_LINE_BYTES
 
 
 def test_format_tool_result_list_content():
@@ -367,6 +370,10 @@ def test_claude_code_jsonl_too_few_messages():
     lines = [json.dumps({"type": "human", "message": {"content": "only one"}})]
     result = _try_claude_code_jsonl("\n".join(lines))
     assert result is None
+    # The parser's long-standing two-turn requirement must not fall through
+    # to indexing the raw envelope. A later complete session remains retryable.
+    with pytest.raises(NonIndexableContentError, match="unsupported_or_incomplete_transcript"):
+        _try_normalize_json_split("\n".join(lines))
 
 
 def test_claude_code_jsonl_invalid_json_lines():
@@ -1176,17 +1183,16 @@ def test_chatgpt_export_array_yields_none_when_every_conversation_is_empty():
 
 
 def test_chatgpt_export_array_survives_malformed_mappings():
-    """Arrays are now fed element-wise to the parser, so it must not raise.
+    """Unrelated mappings decline safely; recognizable chat envelopes refuse.
 
-    Any JSON array under the mined tree reaches this parser (an ES mapping
-    dump, a DB field map), and a raised exception would abort the whole
-    `mine --mode convos` run, since convo_miner only catches OSError/ValueError.
+    Arbitrary arrays (ES mappings, DB field maps) still fall through as data.
+    The schema parser returns None, but dispatch raises the ValueError-derived
+    admission refusal for a recognizable malformed ChatGPT transcript.
     """
     malformed = [
         [{"mapping": [1, 2, 3]}],
         [{"mapping": "oops"}],
         [{"mapping": {"a": "not-a-dict"}}],
-        [{"mapping": {"r": {"parent": None, "message": {"author": None}, "children": []}}}],
         [{"mapping": {"r": {"parent": None, "message": "text", "children": []}}}],
         [{"mapping": {"r": {"parent": None, "message": None, "children": "nope"}}}],
         [{"name": "users", "mapping": {"uid": "int", "email": "str"}}],
@@ -1221,6 +1227,11 @@ def test_chatgpt_export_array_survives_malformed_mappings():
     for payload in malformed:
         assert _try_chatgpt_export_json_split(payload) is None
         assert _try_normalize_json_split(json.dumps(payload)) is None
+
+    recognized = [{"mapping": {"r": {"parent": None, "message": {"author": None}, "children": []}}}]
+    assert _try_chatgpt_export_json_split(recognized) is None
+    with pytest.raises(NonIndexableContentError, match="unsupported_or_incomplete_transcript"):
+        _try_normalize_json_split(json.dumps(recognized))
 
 
 def test_chatgpt_json_string_parts_are_not_split_into_characters():
@@ -1444,7 +1455,7 @@ def test_continue_json_with_tool_messages():
     assert result is not None
     assert "> List files" in result
     assert "Let me check." in result
-    assert "[tool] file1.py" in result
+    assert "[tool] → file1.py" in result
     assert "I found two files." in result
 
 
@@ -1894,7 +1905,7 @@ def test_claude_code_jsonl_thinking_blocks_ignored():
 
 
 def test_normalize_rejects_large_file(tmp_path):
-    """Files over the 500 MB safety limit raise IOError instead of being read.
+    """Files over the admission byte budget are refused before being read.
 
     Size is checked via ``os.fstat`` on the already-open descriptor (no TOCTOU
     gap), so we stub fstat to report a huge regular file rather than mocking the
@@ -1905,14 +1916,12 @@ def test_normalize_rejects_large_file(tmp_path):
 
     class _HugeStat:
         st_mode = stat.S_IFREG | 0o644
-        st_size = 600 * 1024 * 1024
+        st_size = MAX_SOURCE_BYTES + 1
 
     with patch("mempalace.normalize.os.fstat", return_value=_HugeStat()):
-        try:
+        with pytest.raises(NonIndexableContentError, match="source_byte_budget") as exc:
             normalize(str(big))
-            assert False, "Should have raised IOError"
-        except IOError as e:
-            assert "too large" in str(e).lower()
+        assert exc.value.decision == "unsupported"
 
 
 # ── strip_noise() — verbatim-safety boundary tests ─────────────────────

@@ -1,0 +1,20 @@
+{
+  "command": [
+    "ruff",
+    "format",
+    "--no-cache",
+    "mempalace/ingestion.py",
+    "tests/ingestion_safeguards/test_review_second_fixes.py"
+  ],
+  "exact_command": "env TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 ruff format --no-cache mempalace/ingestion.py tests/ingestion_safeguards/test_review_second_fixes.py",
+  "cwd": "<publication>",
+  "environment": {
+    "TZ": "UTC",
+    "TMPDIR": "<publication>/test-tmp",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "exit_status": 0,
+  "elapsed_seconds": 0.016144908000569558
+}

@@ -52,6 +52,7 @@ from .palace import (
 from .collision_scan import assert_no_collisions
 from .hallways import compute_hallways_for_wing
 from .ids import ID_RECIPE, make_drawer_id_from_chunk
+from .ingestion import admit_text, indexing_text
 
 # Re-exported: callers and tests import these from the miner (#2676).
 from .project_config import PROJECT_CONFIG_FILENAMES, find_project_config  # noqa: F401
@@ -1825,6 +1826,11 @@ def add_drawer(
     miner uses ``_build_drawer_metadata`` + a batched ``collection.upsert``
     to amortize the embedding model's forward-pass cost across chunks.
     """
+    admission = admit_text(content, source=source_file)
+    if not admission.indexable:
+        logger.warning("Skipping %s: %s", source_file, ",".join(admission.reasons))
+        return False
+    content = indexing_text(admission.text)
     drawer_id = make_drawer_id_from_chunk(wing, room, source_file, chunk_index)
     try:
         source_mtime = os.path.getmtime(source_file)
@@ -1843,6 +1849,7 @@ def add_drawer(
         source_mtime,
         source_dir_ino=source_dir_ino,
     )
+    metadata.update(admission.metadata())
     collection.upsert(
         documents=[content],
         ids=[drawer_id],
@@ -1899,6 +1906,8 @@ def process_file(
     surface a separate counter in the mine summary (see #1455). It is
     ``"purge_failed"`` when the stale-drawer purge raised: the file was not
     mined, and the mine counts it as an error rather than a skip.
+    ``"admission_rejected"`` means the source was nonindexable; no purge,
+    upsert, closet write, or refresh registration occurs for that source.
 
     ``mined_mtimes`` is :func:`prefetch_complete_mtimes`'s map for this
     mine. A file it proves already filed is skipped without querying the
@@ -1918,6 +1927,12 @@ def process_file(
     if read_result is None:
         return 0, "general", None
     content, read_mtime = read_result
+
+    admission = admit_text(content, source=source_file)
+    if not admission.indexable:
+        logger.warning("Skipping %s: %s", source_file, ",".join(admission.reasons))
+        return 0, "general", "admission_rejected"
+    content = indexing_text(admission.text)
 
     content = content.strip()
     if len(content) < effective_min:
@@ -2038,14 +2053,19 @@ def process_file(
                             agent,
                             chunk["content"],
                             source_mtime,
-                            line_start=chunk.get("line_start"),
-                            line_end=chunk.get("line_end"),
+                            line_start=chunk.get("line_start")
+                            if admission.decision == "keep"
+                            else None,
+                            line_end=chunk.get("line_end")
+                            if admission.decision == "keep"
+                            else None,
                             content_date=file_content_date,
                             chunk_total=len(chunks),
                             content_date_source=file_content_date_source,
                             source_dir_ino=source_dir_ino,
                         )
                     )
+                    batch_metas[-1].update(admission.metadata())
                 assert_no_collisions(list(zip(batch_ids, batch_metas)), collection)
                 collection.upsert(
                     documents=batch_docs,

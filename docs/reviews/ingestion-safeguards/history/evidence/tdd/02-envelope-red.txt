@@ -1,0 +1,204 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+.FFF.FFF...F....                                                         [100%]
+=================================== FAILURES ===================================
+_ test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize-payload0] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_incomplete_or_malformed_c0')
+payload = '{"type": "response_item", "payload": {"type": "reasoning", "encrypted_content": "FORBIDDEN_OPAQUE_SENTINEL"}}\n{"type...output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_SENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}\n> a\n> b\n> c'
+normalizer = <function normalize at 0x7da2bf28fc40>
+
+    @pytest.mark.parametrize("payload", [
+        codex_fragments() + "\n> a\n> b\n> c",
+        '  {"type": "response_item", "payload": {"type": "reasoning",',
+        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
+        '\n\t' + json.dumps({"type": "session_meta"}) + '\n\n' + json.dumps({
+            "type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}),
+    ])
+    @pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
+    def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(tmp_path, payload, normalizer):
+        source = tmp_path / "session.txt"
+        source.write_text(payload)
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:39: Failed
+_ test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize-  {"type": "response_item", "payload": {"type": "reasoning",] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_incomplete_or_malformed_c1')
+payload = '  {"type": "response_item", "payload": {"type": "reasoning",'
+normalizer = <function normalize at 0x7da2bf28fc40>
+
+    @pytest.mark.parametrize("payload", [
+        codex_fragments() + "\n> a\n> b\n> c",
+        '  {"type": "response_item", "payload": {"type": "reasoning",',
+        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
+        '\n\t' + json.dumps({"type": "session_meta"}) + '\n\n' + json.dumps({
+            "type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}),
+    ])
+    @pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
+    def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(tmp_path, payload, normalizer):
+        source = tmp_path / "session.txt"
+        source.write_text(payload)
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:39: Failed
+_ test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize-{\n  "type": "response_item",\n  "payload": {\n    "type": "reasoning"\n  }\n}] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_incomplete_or_malformed_c2')
+payload = '{\n  "type": "response_item",\n  "payload": {\n    "type": "reasoning"\n  }\n}'
+normalizer = <function normalize at 0x7da2bf28fc40>
+
+    @pytest.mark.parametrize("payload", [
+        codex_fragments() + "\n> a\n> b\n> c",
+        '  {"type": "response_item", "payload": {"type": "reasoning",',
+        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
+        '\n\t' + json.dumps({"type": "session_meta"}) + '\n\n' + json.dumps({
+            "type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}),
+    ])
+    @pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
+    def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(tmp_path, payload, normalizer):
+        source = tmp_path / "session.txt"
+        source.write_text(payload)
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:39: Failed
+_ test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize_conversations-payload0] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_incomplete_or_malformed_c4')
+payload = '{"type": "response_item", "payload": {"type": "reasoning", "encrypted_content": "FORBIDDEN_OPAQUE_SENTINEL"}}\n{"type...output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_SENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}\n> a\n> b\n> c'
+normalizer = <function normalize_conversations at 0x7da2bf28fce0>
+
+    @pytest.mark.parametrize("payload", [
+        codex_fragments() + "\n> a\n> b\n> c",
+        '  {"type": "response_item", "payload": {"type": "reasoning",',
+        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
+        '\n\t' + json.dumps({"type": "session_meta"}) + '\n\n' + json.dumps({
+            "type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}),
+    ])
+    @pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
+    def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(tmp_path, payload, normalizer):
+        source = tmp_path / "session.txt"
+        source.write_text(payload)
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:39: Failed
+_ test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize_conversations-  {"type": "response_item", "payload": {"type": "reasoning",] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_incomplete_or_malformed_c5')
+payload = '  {"type": "response_item", "payload": {"type": "reasoning",'
+normalizer = <function normalize_conversations at 0x7da2bf28fce0>
+
+    @pytest.mark.parametrize("payload", [
+        codex_fragments() + "\n> a\n> b\n> c",
+        '  {"type": "response_item", "payload": {"type": "reasoning",',
+        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
+        '\n\t' + json.dumps({"type": "session_meta"}) + '\n\n' + json.dumps({
+            "type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}),
+    ])
+    @pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
+    def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(tmp_path, payload, normalizer):
+        source = tmp_path / "session.txt"
+        source.write_text(payload)
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:39: Failed
+_ test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize_conversations-{\n  "type": "response_item",\n  "payload": {\n    "type": "reasoning"\n  }\n}] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_incomplete_or_malformed_c6')
+payload = '{\n  "type": "response_item",\n  "payload": {\n    "type": "reasoning"\n  }\n}'
+normalizer = <function normalize_conversations at 0x7da2bf28fce0>
+
+    @pytest.mark.parametrize("payload", [
+        codex_fragments() + "\n> a\n> b\n> c",
+        '  {"type": "response_item", "payload": {"type": "reasoning",',
+        json.dumps({"type": "response_item", "payload": {"type": "reasoning"}}, indent=2),
+        '\n\t' + json.dumps({"type": "session_meta"}) + '\n\n' + json.dumps({
+            "type": "event_msg", "payload": {"type": "user_message", "message": "Only one turn"}}),
+    ])
+    @pytest.mark.parametrize("normalizer", [normalize, normalize_conversations])
+    def test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback(tmp_path, payload, normalizer):
+        source = tmp_path / "session.txt"
+        source.write_text(payload)
+>       with pytest.raises(UnparsedCodexTranscriptError):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnparsedCodexTranscriptError
+
+tests/test_ingestion.py:39: Failed
+_ test_legitimate_text_code_and_config_are_preserved[Example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```] _
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-2/test_legitimate_text_code_and_1')
+content = 'Example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```'
+
+    @pytest.mark.parametrize("content", [
+        'Discussion of encrypted_content and response_item is useful prose.',
+        'Example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```',
+        '> quote one\n> quote two\n> quote three\nDiscuss session_meta here.',
+        '{"encrypted_content":"a documented config option","retries":3,"bytes":[1,2,3]}',
+        'def response_item():\n    return {"type": "session_meta"}',
+        'ID: ' + 'a' * 64 + '\n事实: 東京 is in Japan.\nHe kōrero tēnei.',
+    ])
+    def test_legitimate_text_code_and_config_are_preserved(tmp_path, content):
+        source = tmp_path / "facts.json"
+        source.write_text(content)
+>       assert normalize_conversations(str(source)) == [content]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_ingestion.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+mempalace/normalize.py:225: in normalize_conversations
+    split = _try_normalize_json_split(content)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+content = 'Example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```'
+
+    def _try_normalize_json_split(content: str) -> Optional[list]:
+        """Try all known JSON chat schemas, returning each conversation found as
+        a separate list entry (bundle formats) or a single-element list.
+        """
+    
+        normalized = _try_claude_code_jsonl(content)
+        if normalized:
+            return [normalized]
+    
+        normalized = _try_codex_jsonl(content)
+        if normalized:
+            return [normalized]
+    
+        # A recognized rollout must never become raw JSON text just because its
+        # conversation schema changed (or its first turn is still incomplete).
+        # Keep this outside the parser so additional supported schemas can return
+        # normally without changing the fallback boundary.
+        for line in content.splitlines():
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if is_codex_event(entry):
+>               raise UnparsedCodexTranscriptError(
+                    "Codex rollout contains no complete supported conversation; "
+                    "refusing raw JSON fallback"
+                )
+E               mempalace.normalize.UnparsedCodexTranscriptError: Codex rollout contains no complete supported conversation; refusing raw JSON fallback
+
+mempalace/normalize.py:265: UnparsedCodexTranscriptError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize-payload0]
+FAILED tests/test_ingestion.py::test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize-  {"type": "response_item", "payload": {"type": "reasoning",]
+FAILED tests/test_ingestion.py::test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize-{\n  "type": "response_item",\n  "payload": {\n    "type": "reasoning"\n  }\n}]
+FAILED tests/test_ingestion.py::test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize_conversations-payload0]
+FAILED tests/test_ingestion.py::test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize_conversations-  {"type": "response_item", "payload": {"type": "reasoning",]
+FAILED tests/test_ingestion.py::test_incomplete_or_malformed_codex_cannot_use_prose_or_quote_fallback[normalize_conversations-{\n  "type": "response_item",\n  "payload": {\n    "type": "reasoning"\n  }\n}]
+FAILED tests/test_ingestion.py::test_legitimate_text_code_and_config_are_preserved[Example:\n```json\n{"type":"response_item","payload":{"type":"reasoning"}}\n```]
+7 failed, 9 passed in 0.08s
+
+EXIT STATUS: 1

@@ -1,0 +1,9 @@
+# Historical test logs and unified patches preserve their original whitespace.
+# Do not apply source-code whitespace diagnostics to archived evidence.
+docs/reviews/ingestion-safeguards/history/** -whitespace
+# Real RED/GREEN diagnostic logs retain pytest source excerpts and caret layout.
+docs/reviews/ingestion-safeguards/review-fixes/*.txt -whitespace
+docs/reviews/ingestion-safeguards/review-second-fixes/*.txt -whitespace
+# Exact rejected review freeze: preserve unified-diff context whitespace.
+docs/reviews/ingestion-safeguards/review-second-fixes/FROZEN_SOURCE.patch -whitespace
+docs/reviews/ingestion-safeguards/review-third-fixes/FROZEN_SOURCE.patch -whitespace

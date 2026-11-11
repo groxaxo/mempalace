@@ -1,0 +1,3 @@
+TMPDIR=<snapshot>/test-tmp git apply --check --reverse --whitespace=error-all evidence/IMPLEMENTATION.patch
+
+EXIT STATUS: 0

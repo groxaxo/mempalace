@@ -1,0 +1,69 @@
+{
+  "passed": false,
+  "reviewed_patch_sha256": "259ebac8330ba368035ac096962573ca0d5bbc6e47b8de61a40e92631154ef50",
+  "security_concerns": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "file": "mempalace/ingestion.py",
+      "lines": "117-157, 204, 660-663",
+      "title": "Literal recognition can exhaust memory below both byte limits",
+      "evidence": "Bounded, offline subprocess probes called admit_text('[{\"rawOutput\":{\"base64\":0}},' + '0,' * n + ']', spellcheck=False). At n=20000, 40029 input bytes used 39892 KiB peak RSS; at n=60000, 120029 bytes used 79488 KiB. At n=120000, only 240029 bytes, admit_text raised an uncaught MemoryError under a 128 MiB address-space cap. Each child had CPU limits of 3/4 seconds, a six-second alarm, and an eight-second parent timeout.",
+      "impact": "The new direct ast.literal_eval path allocates an AST before enforcing any structural allocation budget. This input fits even the 256 KiB tool-string limit; treating that string as one node does not protect the parser. MemoryError also escapes admission's exception handling. The 8 MiB source cap therefore does not provide a safe resource boundary.",
+      "requested_change": "Enforce a bounded token/node/allocation budget before AST construction, including on the JavaScript compatibility path. Return an explicit unsupported resource outcome without relying solely on catching MemoryError. Add guarded flat-container allocation regressions alongside the repeated-comment performance test."
+    }
+  ],
+  "logic_errors": [
+    {
+      "id": "R2",
+      "priority": "P1",
+      "file": "mempalace/ingestion.py",
+      "lines": "512-552",
+      "title": "Recognizable truncated transcript families still fall through as indexable prose",
+      "evidence": "Verified that '{\"role\":\"assistant\",\"content\":', '[{\"role\":\"assistant\",\"content\":', '{\"mapping\":{\"one\":{\"message\":{\"author\":{\"role\":\"user\"},\"content\":', and '[{\"type\":\"message\",\"user\":\"U1\",\"text\":' all produce decision='keep', indexable=true, no omissions, and unchanged serialized text. The wrapped control '{\"messages\":[{\"role\":\"assistant\",\"content\":' correctly refuses. A known Claude envelope with type='assistant', 2100 padding characters, and a trailing '\"message\":' also returns keep because the second identifying field lies beyond the 2048-character prefix.",
+      "impact": "The malformed recognizer omits shapes recognized by _value_family for complete JSON and can miss existing shapes when their identifying fields cross the prefix boundary. Covered writers can consequently index recognizable incomplete envelopes instead of refusing them.",
+      "requested_change": "Use bounded, depth-aware structural recognition consistently for complete and truncated message, ChatGPT, Slack, and existing envelope families. Budget exhaustion must not silently authorize raw fallback. Add these cases and late-field cases while retaining positive ordinary-code/configuration controls."
+    },
+    {
+      "id": "R3",
+      "priority": "P2",
+      "file": "mempalace/ingestion.py",
+      "lines": "527-551",
+      "title": "Transcript prefix heuristics reject envelope-looking text inside comments and Python strings",
+      "evidence": "The valid Python literal '[ # {\"type\":\"response_item\"}\\n {\"rawOutput\":{\"base64\":0}}]' passes ast.literal_eval but admission returns archive-only with unparsed_codex. A valid Python triple-string value containing the literal line '{\"type\":\"response_item\"}' has the same result. The valid JavaScript '[/* {\"type\":\"response_item\"} */ {\"rawOutput\":{\"base64\":0}}];' also returns archive-only/unparsed_codex; Node --check confirmed its syntax without executing it.",
+      "impact": "The raw prefix regex treats comments and quoted source data as transcript structure before the complete-literal preservation probe can help. This leaves valid Python triple-string examples and JavaScript literal examples nonindexable despite the second fix.",
+      "requested_change": "Make envelope recognition aware of lexical boundaries and structural depth so comment/string contents cannot supply envelope fields. Keep actual recognized root transcript envelopes fail-closed; do not simply allow all complete Python literals ahead of those guards. Add comment and triple-string cross-controls."
+    },
+    {
+      "id": "R4",
+      "priority": "P2",
+      "file": "mempalace/ingestion.py",
+      "lines": "107-109, 129-157, 204",
+      "title": "Valid JavaScript literals remain falsely classified as malformed transport",
+      "evidence": "Both '[{\"rawOutput\":{\"base64\":0}, 日本語:\"useful\"}];' and '[{\"rawOutput\":{\"base64\":`documented literal`}}];' passed Node --check. admit_text returned archive-only with malformed_transport/no_useful_content for both, and _format_tool_result returned an empty string. The tokenizer splits the multi-character Unicode identifier and does not recognize template-string literals.",
+      "impact": "Useful source examples are discarded because transport-related field names trigger a recognizer that does not cover otherwise valid literal syntax. Multilingual prose support does not protect multilingual JavaScript property names.",
+      "requested_change": "Extend the bounded, non-executing source-literal recognizer to handle Unicode identifiers and template literals, or otherwise avoid treating unsupported valid source syntax as sufficient evidence of malformed transport. Add admission, formatting, and writer-preservation regressions for these examples."
+    },
+    {
+      "id": "R5",
+      "priority": "P2",
+      "file": "mempalace/ingestion.py",
+      "lines": "264-283",
+      "title": "Fence tracking deletes literal source data inside valid Markdown fences",
+      "evidence": "With blob=base64.b64encode(bytes(range(256))*12).decode(), admission of '````markdown\\n```text\\n' + blob + '\\n```\\n````' returned sanitize and opaque_line=1, deleting blob even though it remains inside the four-backtick fence. The same deletion occurs for '```text\\n~~~\\n' + blob + '\\n```': a tilde line incorrectly closes the backtick fence.",
+      "impact": "Toggling one boolean for every backtick/tilde-looking line corrupts legitimate fenced documentation and literal source data, contradicting the promise to omit these spans only outside code fences.",
+      "requested_change": "Track the opening fence character and run length. Only a valid matching closing fence may leave fenced mode; shorter nested runs and the other delimiter character must remain literal content. Add nested-length and mixed-delimiter preservation tests."
+    }
+  ],
+  "suggestions": [
+    {
+      "topic": "Publication scope",
+      "recommendation": "Keep the already disclosed accepted-replacement delete-before-write behavior and uncovered writers labeled as deployment blockers, not newly introduced findings. This failed publication review does not supersede those blockers."
+    },
+    {
+      "topic": "Verification claims",
+      "recommendation": "Preserve the distinction between the parent's selected integration results, the hypothesis-blocked whole-suite collection, and the separately requested authentication-blocked Claude review. These independent bounded probes are not a whole-suite run or that Claude review."
+    }
+  ],
+  "summary": "FAIL. Read the complete 3387-line, 18-section frozen patch. Its 135361-byte size and SHA256 match; HEAD matches the release base, and all 18 source fingerprints matched before and after review. Bounded offline probes verified memory exhaustion, malformed-envelope fallback gaps, valid-source refusals, and fenced-data deletion. Positive spot checks passed for literal omission markers, joined omission provenance, UTF-8 tool caps, the original triple-string regression, and the former repeated-comment quadratic reproducer. Admission uses literal parsing, not source execution. No files were written by this reviewer; no credentials, network, services, models, or MCP endpoints were accessed. Publication and deployment are not approved."
+}

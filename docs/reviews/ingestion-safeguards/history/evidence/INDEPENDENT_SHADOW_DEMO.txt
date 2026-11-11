@@ -1,0 +1,102 @@
+COMMAND: TMPDIR=<snapshot>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 .venv/bin/python scripts/shadow_demo.py
+EXIT STATUS: 0
+{
+  "decision_counts": {
+    "archive-only": 1,
+    "keep": 1,
+    "sanitize": 3,
+    "unsupported": 1
+  },
+  "files": [
+    {
+      "conversations": 1,
+      "decision": "keep",
+      "input_bytes": 60,
+      "input_lines": 1,
+      "omission_counts": {},
+      "reason_counts": {
+        "plain_or_structured_text": 1
+      },
+      "selected_bytes": 60,
+      "sha256": "5bca7d7b85390e56aa7603280e5312766f0fda8c486bf2f8bf01866f20cd0bc1",
+      "source": "<snapshot>/test-tmp/shadow-demo/facts.json"
+    },
+    {
+      "conversations": 1,
+      "decision": "sanitize",
+      "input_bytes": 315,
+      "input_lines": 4,
+      "omission_counts": {
+        "codex_noncanonical_event": 1
+      },
+      "reason_counts": {
+        "codex_noncanonical_event": 1,
+        "normalized_transcript": 1
+      },
+      "selected_bytes": 31,
+      "sha256": "c2cd9b6ac02d58c3b18a7657ecd0e5cda351057807aafa121a3d14545ddd8ef1",
+      "source": "<snapshot>/test-tmp/shadow-demo/canonical.jsonl"
+    },
+    {
+      "conversations": 0,
+      "decision": "archive-only",
+      "input_bytes": 113,
+      "input_lines": 1,
+      "omission_counts": {
+        "codex_noncanonical_event": 1
+      },
+      "reason_counts": {
+        "unparsed_codex": 1
+      },
+      "selected_bytes": 0,
+      "sha256": "ecea9ad0436ca3a337d4ea6968f32a9ce128fc3ebbcb3ac018e4a58dbd706c26",
+      "source": "<snapshot>/test-tmp/shadow-demo/headerless.jsonl"
+    },
+    {
+      "conversations": 1,
+      "decision": "sanitize",
+      "input_bytes": 366,
+      "input_lines": 1,
+      "omission_counts": {
+        "codex_noncanonical_event": 1
+      },
+      "reason_counts": {
+        "codex_noncanonical_event": 1,
+        "normalized_transcript": 1
+      },
+      "selected_bytes": 31,
+      "sha256": "a51dd0a7cadea0bead6e1932dc3e7ab622adeac63ca9a44ed592f1bdb37f3130",
+      "source": "<snapshot>/test-tmp/shadow-demo/encoded.json"
+    },
+    {
+      "conversations": 0,
+      "decision": "unsupported",
+      "input_bytes": 465,
+      "input_lines": 1,
+      "omission_counts": {},
+      "reason_counts": {
+        "encoding_depth": 1
+      },
+      "selected_bytes": 0,
+      "sha256": "e10d0af470e6777f97ec0c5b3faeae9d324a50b81f1b461afa53e354e7a81cb3",
+      "source": "<snapshot>/test-tmp/shadow-demo/excess-encoding.json"
+    },
+    {
+      "conversations": 1,
+      "decision": "sanitize",
+      "input_bytes": 4132,
+      "input_lines": 2,
+      "omission_counts": {
+        "opaque_line": 1
+      },
+      "reason_counts": {
+        "opaque_line": 1
+      },
+      "selected_bytes": 35,
+      "sha256": "fe361fa6753efac49363d7915207705d54fcc538d87868498b1988f388949a51",
+      "source": "<snapshot>/test-tmp/shadow-demo/command-output.txt"
+    }
+  ],
+  "mode": "shadow",
+  "policy_version": 1
+}

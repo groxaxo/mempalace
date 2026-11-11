@@ -1,0 +1,4 @@
+?? .gitignore
+?? AGENTS.md
+?? TASK.md
+?? evidence/INITIAL_STATUS.txt

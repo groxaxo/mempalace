@@ -1,0 +1,31 @@
+With --no-index, exit 1 with no diagnostics means the file differs from /dev/null and has no whitespace errors. Diagnostics or other exit codes fail this check.
+
+git diff --check --no-index -- /dev/null mempalace/ingestion.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null mempalace/ingestion_audit.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null FINAL_REPORT.md
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null tests/conftest.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null tests/test_ingestion.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null tests/test_mcp_admission.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null tests/test_shadow_audit.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null tests/test_writers.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null scripts/record_check.py
+EXIT STATUS: 1
+
+git diff --check --no-index -- /dev/null scripts/shadow_demo.py
+EXIT STATUS: 1

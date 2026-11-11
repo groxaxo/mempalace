@@ -1,0 +1,48 @@
+INDEPENDENT VERIFICATION -- NOT THE REQUESTED CLAUDE REVIEW
+
+Workspace: <snapshot>
+Implementation process: proc_bbfcebf10778 completed with exit code 0.
+Baseline: 88222ec8be25295c6ea2155ee6cdcf89c58e58fd
+Python: 3.12.16; pytest: 9.2.0
+Frozen patch SHA-256: c9f075323d197485bb6e8c4d12f22ea637d4aff675d21db10f6b148fc99c2d8a
+Source-file fingerprints: evidence/REVIEW_MANIFEST.json
+
+Executed independently after Codex exited:
+  - Full available synthetic suite: 84 passed in 1.10s; exit 0.
+    Evidence: evidence/INDEPENDENT_PYTEST.txt
+  - compileall for mempalace, tests, scripts, deployment_reference: exit 0.
+    Evidence: evidence/INDEPENDENT_COMPILEALL.txt
+  - git diff --check and reverse-application check of IMPLEMENTATION.patch: exit 0.
+    Evidence: evidence/INDEPENDENT_DIFF_CHECK.txt
+  - Runnable shadow CLI demonstration: exit 0.
+    Decisions: keep=1, sanitize=3, archive-only=1, unsupported=1.
+    Evidence: evidence/INDEPENDENT_SHADOW_DEMO.txt
+
+Read the full changed production-code diff, the new admission/audit modules,
+and all four synthetic test modules. Verified the patch includes the newly
+added source, tests, scripts, and implementation report, not just tracked edits.
+A coarse static scan found no matches for literal password/API-key assignments,
+shell=True/os.system, or pickle loads in changed/new Python files. Its exec
+matches were existing module-description strings and the deliberate local-source
+handler loader in tests/test_mcp_admission.py, not payload execution. This
+limited scan is not a security certification.
+
+BOUNDARIES / NOT APPROVED FOR DEPLOYMENT
+  - The package snapshot does not include the upstream regression suite.
+  - Tests use the actual admission/writer code with fake embedding and storage
+    boundaries, not a real production database/model or MCP server transport.
+  - Some existing import, maintenance, metadata rewrite, and direct-storage
+    routes remain ungated; see FINAL_REPORT.md. Admission is not universal.
+  - Admitted replacements retain the pre-existing delete-before-upsert hazard.
+    Admission rejection preserves old data; later embedding/storage failures
+    are not made transactionally safe by this patch.
+  - Unrecognized schemas, low-diversity payloads, relevance calibration,
+    historical pollution cleanup, and actual-corpus shadow evaluation remain.
+  - No deployment, production contact, reindex, cleanup, restart, commit, push,
+    or global configuration change was performed during this verification.
+
+CLAUDE REVIEW BLOCKED
+The isolated Claude executable was rechecked: loggedIn=false, authMethod=none,
+apiProvider=firstParty (exit 1). The user-requested Claude Sonnet 5.5 / medium
+review has NOT run. Exact model availability/full model ID remains unverified.
+Do not mark that review complete or silently substitute a model/provider.

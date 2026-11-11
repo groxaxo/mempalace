@@ -1,0 +1,5 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests
+.................................................................        [100%]
+65 passed in 1.00s
+
+EXIT STATUS: 0

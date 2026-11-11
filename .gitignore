@@ -47,3 +47,6 @@ target/
 *.dylib
 *.exe
 
+# Disposable ingestion audit/demo fixtures and local test homes
+test-tmp/
+

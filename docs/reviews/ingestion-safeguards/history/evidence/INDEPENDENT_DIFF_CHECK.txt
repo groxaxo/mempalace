@@ -1,0 +1,3 @@
+COMMAND: git diff --check && git apply --reverse --check --whitespace=error-all evidence/IMPLEMENTATION.patch
+EXIT STATUS: 0
+

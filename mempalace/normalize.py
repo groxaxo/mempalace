@@ -20,15 +20,31 @@ No API key. No internet. Everything local.
 """
 
 import errno
+import hashlib
 import json
 import os
 import re
 import stat
-from pathlib import Path
 from typing import Optional
 
+from .ingestion import (
+    NonIndexableContentError,
+    transcript_family,
+    unwrap_transcript,
+    bound_tool_result,
+    note_omission,
+    select_tool_text,
+    select_visible_text,
+    MAX_SOURCE_BYTES,
+    admit_text,
+    indexing_text,
+    spellcheck_enabled,
+    annotate_omissions,
+    omission_report,
+)
 
-class UnparsedCodexTranscriptError(ValueError):
+
+class UnparsedCodexTranscriptError(NonIndexableContentError):
     """A recognized Codex rollout did not yield a supported conversation."""
 
 
@@ -121,7 +137,7 @@ def strip_noise(text: str) -> str:
     return text.strip()
 
 
-def _read_transcript_file(filepath: str) -> str:
+def _read_transcript_file(filepath: str, *, with_fingerprint: bool = False):
     """Read a transcript source file with the same safety checks normalize()
     and normalize_conversations() both need: no symlinks, regular files only,
     size-capped, BOM-tolerant.
@@ -146,12 +162,21 @@ def _read_transcript_file(filepath: str) -> str:
             # Text stays prefix-free: this raise is inside the ``try``, so the
             # ``except OSError`` below composes "Could not read <path>: ...".
             raise IOError("not a regular file")
-        if file_stat.st_size > 500 * 1024 * 1024:  # 500 MB safety limit
-            # Prefix-free for the same reason as the branch above.
-            raise IOError(f"file too large ({file_stat.st_size // (1024 * 1024)} MB)")
-        with os.fdopen(fd, "r", encoding="utf-8-sig", errors="replace") as f:
+        if file_stat.st_size > MAX_SOURCE_BYTES:
+            raise NonIndexableContentError("source_byte_budget", decision="unsupported")
+        with os.fdopen(fd, "rb") as f:
             fd = -1
-            return f.read()
+            raw = f.read(MAX_SOURCE_BYTES + 1)
+        if len(raw) > MAX_SOURCE_BYTES:
+            raise NonIndexableContentError("source_byte_budget", decision="unsupported")
+        text = raw.decode("utf-8-sig", errors="replace")
+        if with_fingerprint:
+            return text, {
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                "input_bytes": len(raw),
+                "input_lines": len(text.splitlines()),
+            }
+        return text
     except OSError as e:
         raise IOError(f"Could not read {filepath}: {e}") from e
     finally:
@@ -165,28 +190,15 @@ def _read_transcript_file(filepath: str) -> str:
 def normalize(filepath: str) -> str:
     """
     Load a file and normalize to transcript format if it's a chat export.
-    Plain text files pass through unchanged.
+    Ordinary text passes through; unsafe envelopes raise an admission refusal.
     """
     content = _read_transcript_file(filepath)
 
     if not content.strip():
         return content
 
-    # Already has > markers — pass through unchanged.
-    lines = content.split("\n")
-    if sum(1 for line in lines if line.strip().startswith(">")) >= 3:
-        return content
-
-    # Try JSON normalization. strip_noise is applied inside the Claude Code
-    # JSONL parser (the only format that injects system tags/hook chrome);
-    # other formats pass through verbatim.
-    ext = Path(filepath).suffix.lower()
-    if ext in (".json", ".jsonl") or content.strip()[:1] in ("{", "["):
-        normalized = _try_normalize_json(content)
-        if normalized:
-            return normalized
-
-    return content
+    admission = admit_text(content, source=filepath)
+    return annotate_omissions("\n\n".join(admission.require_conversations()), admission.omissions)
 
 
 def normalize_conversations(filepath: str) -> list:
@@ -214,17 +226,10 @@ def normalize_conversations(filepath: str) -> list:
     if not content.strip():
         return []
 
-    lines = content.split("\n")
-    if sum(1 for line in lines if line.strip().startswith(">")) >= 3:
-        return [content]
-
-    ext = Path(filepath).suffix.lower()
-    if ext in (".json", ".jsonl") or content.strip()[:1] in ("{", "["):
-        split = _try_normalize_json_split(content)
-        if split:
-            return split
-
-    return [content]
+    admission = admit_text(content, source=filepath)
+    return [
+        annotate_omissions(text, admission.omissions) for text in admission.require_conversations()
+    ]
 
 
 def _try_normalize_json(content: str) -> Optional[str]:
@@ -242,6 +247,18 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
     a separate list entry (bundle formats) or a single-element list.
     """
 
+    content = unwrap_transcript(content)
+    # Extensions are only hints. A .json document can be prose explaining a
+    # format; do not interpret JSON examples embedded in that prose as events.
+    if not content.lstrip().startswith(("{", "[")):
+        return None
+
+    # Establish lexical root structure before any line-oriented parser can
+    # mistake JSON inside a source string/comment for conversation records.
+    family = transcript_family(content)
+    if not family:
+        return None
+
     normalized = _try_claude_code_jsonl(content)
     if normalized:
         return [normalized]
@@ -254,16 +271,8 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
     # conversation schema changed (or its first turn is still incomplete).
     # Keep this outside the parser so additional supported schemas can return
     # normally without changing the fallback boundary.
-    for line in content.splitlines():
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(entry, dict) and entry.get("type") == "session_meta":
-            raise UnparsedCodexTranscriptError(
-                "Codex rollout contains no complete supported conversation; "
-                "refusing raw JSON fallback"
-            )
+    if family == "codex":
+        raise UnparsedCodexTranscriptError("unparsed_codex")
 
     normalized = _try_gemini_jsonl(content)
     if normalized:
@@ -276,7 +285,7 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
     try:
         data = json.loads(content)
     except json.JSONDecodeError:
-        return None
+        raise NonIndexableContentError("malformed_transcript")
 
     normalized = _try_gemini_json(data)
     if normalized:
@@ -295,7 +304,7 @@ def _try_normalize_json_split(content: str) -> Optional[list]:
         if normalized:
             return [normalized]
 
-    return None
+    raise NonIndexableContentError("unsupported_or_incomplete_transcript")
 
 
 def _try_claude_code_jsonl(content: str) -> Optional[str]:
@@ -384,6 +393,8 @@ def _try_codex_jsonl(content: str) -> Optional[str]:
             continue
 
         if entry_type != "event_msg":
+            if entry_type in ("response_item", "turn_context"):
+                note_omission("codex_noncanonical_event")
             continue
 
         payload = entry.get("payload", {})
@@ -394,7 +405,7 @@ def _try_codex_jsonl(content: str) -> Optional[str]:
         msg = payload.get("message")
         if not isinstance(msg, str):
             continue
-        text = msg.strip()
+        text = select_visible_text(msg)
         if not text:
             continue
 
@@ -461,7 +472,7 @@ def _try_gemini_jsonl(content: str) -> Optional[str]:
                 continue
             text = block.get("text", "")
             if isinstance(text, str) and text.strip():
-                parts.append(text)
+                parts.append(select_visible_text(text))
         if not parts:
             continue
         joined = "\n".join(parts)
@@ -575,9 +586,9 @@ def _try_gemini_json(data) -> Optional[str]:
             text_parts = []
             for p in parts:
                 if isinstance(p, str):
-                    text_parts.append(p)
+                    text_parts.append(select_visible_text(p))
                 elif isinstance(p, dict) and "text" in p:
-                    text_parts.append(p["text"])
+                    text_parts.append(select_visible_text(p["text"]))
             text = " ".join(text_parts).strip()
         else:
             text = _extract_content(item.get("content", ""))
@@ -656,7 +667,9 @@ def _collect_claude_messages(items) -> list:
         if not isinstance(item, dict):
             continue
         role = item.get("role") or item.get("sender", "")
-        text = _extract_content(item.get("content", "")) or (item.get("text") or "").strip()
+        text = _extract_content(item.get("content", "")) or select_visible_text(
+            item.get("text") or ""
+        )
         if role in ("user", "human") and text:
             messages.append(("user", text))
         elif role in ("assistant", "ai") and text:
@@ -706,7 +719,9 @@ def _try_chatgpt_json(data) -> Optional[str]:
                 parts = content.get("parts") if isinstance(content, dict) else None
                 if not isinstance(parts, list):
                     parts = []
-                text = " ".join(str(p) for p in parts if isinstance(p, str) and p).strip()
+                text = " ".join(
+                    select_visible_text(p) for p in parts if isinstance(p, str) and p
+                ).strip()
                 if role == "user" and text:
                     messages.append(("user", text))
                 elif role == "assistant" and text:
@@ -777,7 +792,7 @@ def _try_slack_json(data) -> Optional[str]:
         # Sanitize speaker ID: strip brackets, newlines, and control chars
         # to prevent chunk-boundary injection via crafted exports
         user_id = re.sub(r"[\[\]\n\r\x00-\x1f]", "_", raw_user_id).strip()
-        text = item.get("text", "").strip()
+        text = select_visible_text(item.get("text", ""))
         if not text or not user_id:
             continue
         if user_id not in seen_users:
@@ -817,20 +832,9 @@ def _try_continue_json(data) -> Optional[str]:
         role = item.get("role", "")
         content = item.get("content", "")
 
-        # Extract text from string or list-of-blocks content
-        if isinstance(content, list):
-            parts = []
-            for block in content:
-                if isinstance(block, dict):
-                    if block.get("type") == "text":
-                        parts.append(block.get("text", ""))
-                elif isinstance(block, str):
-                    parts.append(block)
-            text = "\n".join(p for p in parts if p).strip()
-        elif isinstance(content, str):
-            text = content.strip()
-        else:
-            continue
+        text = (
+            _format_tool_result(content, "Unknown") if role == "tool" else _extract_content(content)
+        )
 
         if not text:
             continue
@@ -860,16 +864,16 @@ def _extract_content(content, tool_use_map: dict = None) -> str:
                       select the right formatting strategy for tool_result blocks.
     """
     if isinstance(content, str):
-        return content.strip()
+        return select_visible_text(content)
     if isinstance(content, list):
         parts = []
         for item in content:
             if isinstance(item, str):
-                parts.append(item)
+                parts.append(select_visible_text(item))
             elif isinstance(item, dict):
                 block_type = item.get("type")
                 if block_type == "text":
-                    parts.append(item.get("text", ""))
+                    parts.append(select_visible_text(item.get("text", "")))
                 elif block_type == "tool_use":
                     parts.append(_format_tool_use(item))
                 elif block_type == "tool_result":
@@ -879,9 +883,11 @@ def _extract_content(content, tool_use_map: dict = None) -> str:
                     formatted = _format_tool_result(result_content, tname)
                     if formatted:
                         parts.append(formatted)
+                else:
+                    note_omission("typed_nontext")
         return "\n".join(p for p in parts if p).strip()
     if isinstance(content, dict):
-        return content.get("text", "").strip()
+        return select_visible_text(content.get("text", ""))
     return ""
 
 
@@ -923,7 +929,7 @@ def _format_tool_use(block: dict) -> str:
         return f"[{name} {path}]"
 
     # Unknown tool — serialize input, truncate
-    summary = json.dumps(inp, separators=(",", ":"))
+    summary = indexing_text(select_tool_text(inp))
     if len(summary) > 200:
         summary = summary[:200] + "..."
     return f"[{name}] {summary}"
@@ -931,7 +937,6 @@ def _format_tool_use(block: dict) -> str:
 
 _TOOL_RESULT_MAX_LINES_BASH = 20  # head and tail line count
 _TOOL_RESULT_MAX_MATCHES = 20  # Grep/Glob cap
-_TOOL_RESULT_MAX_BYTES = 2048  # fallback cap for unknown tools
 
 
 def _format_tool_result(content, tool_name: str) -> str:
@@ -944,24 +949,20 @@ def _format_tool_result(content, tool_name: str) -> str:
     Returns:
         Formatted string prefixed with ``→ ``, or empty string if omitted.
     """
-    # Normalize list-of-blocks to plain text
-    if isinstance(content, list):
-        parts = []
-        for item in content:
-            if isinstance(item, dict) and item.get("type") == "text":
-                parts.append(item.get("text", ""))
-            elif isinstance(item, str):
-                parts.append(item)
-        text = "\n".join(parts)
-    else:
-        text = str(content) if content else ""
+    with omission_report() as (omissions, standalone):
+        text = _tool_result_text(content, tool_name)
+        return annotate_omissions(text, omissions, tool=True) if standalone else text
 
-    text = text.strip()
+
+def _tool_result_text(content, tool_name: str) -> str:
+    """Keep selected content separate from annotations throughout formatting."""
+    text = select_tool_text(content)
     if not text:
         return ""
 
     # Read/Edit/Write — omit result (content is in palace or git)
     if tool_name in ("Read", "Edit", "Write"):
+        note_omission("tool_result_by_policy")
         return ""
 
     lines = text.split("\n")
@@ -970,36 +971,29 @@ def _format_tool_result(content, tool_name: str) -> str:
     if tool_name == "Bash":
         n = _TOOL_RESULT_MAX_LINES_BASH
         if len(lines) <= n * 2:
-            return "→ " + "\n→ ".join(lines)
+            return bound_tool_result("→ " + "\n→ ".join(lines))
         head = lines[:n]
         tail = lines[-n:]
         omitted = len(lines) - 2 * n
-        return (
-            "→ "
-            + "\n→ ".join(head)
-            + f"\n→ ... [{omitted} lines omitted] ..."
-            + "\n→ "
-            + "\n→ ".join(tail)
-        )
+        note_omission("tool_lines", omitted)
+        return bound_tool_result("→ " + "\n→ ".join(head) + "\n→ " + "\n→ ".join(tail))
 
     # Grep/Glob — cap matches
     if tool_name in ("Grep", "Glob"):
         cap = _TOOL_RESULT_MAX_MATCHES
         if len(lines) <= cap:
-            return "→ " + "\n→ ".join(lines)
+            return bound_tool_result("→ " + "\n→ ".join(lines))
         kept = lines[:cap]
         remaining = len(lines) - cap
-        return "→ " + "\n→ ".join(kept) + f"\n→ ... [{remaining} more matches]"
+        note_omission("tool_lines", remaining)
+        return bound_tool_result("→ " + "\n→ ".join(kept))
 
-    # Unknown — byte cap
-    if len(text) > _TOOL_RESULT_MAX_BYTES:
-        return "→ " + text[:_TOOL_RESULT_MAX_BYTES] + f"... [truncated, {len(text)} chars]"
-    return "→ " + text
+    return bound_tool_result("→ " + text)
 
 
 def _messages_to_transcript(messages: list, spellcheck: bool = True) -> str:
     """Convert [(role, text), ...] to transcript format with > markers."""
-    if spellcheck:
+    if spellcheck and spellcheck_enabled():
         try:
             from mempalace.spellcheck import spellcheck_user_text
 
@@ -1033,7 +1027,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 2:
-        print("Usage: python normalize.py <filepath>")
+        print("Usage: python -m mempalace.normalize <filepath>")
         sys.exit(1)
     filepath = sys.argv[1]
     result = normalize(filepath)

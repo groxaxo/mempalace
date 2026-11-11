@@ -13,6 +13,22 @@ Local-first AI memory. Verbatim storage, pluggable backend, 96.6% R@5 raw on Lon
 
 </div>
 
+> [!WARNING]
+> **Experimental ingestion safeguards, not a deployment release.**
+> The five findings in the previous frozen patch have been corrected, with
+> 733 selected tests passing. Publication to this fork's `main` was authorized;
+> this is not full-suite validation or independent deployment approval.
+> This branch is based on upstream **3.11.0**, not this fork's older `develop`
+> branch. It adds deterministic admission controls and a read-only shadow audit.
+> Literal annotation examples and source-code literals retain their text; generated
+> omission annotations stay separate from the selected indexing text.
+> Recognized opaque transport data is omitted from selected semantic text; source
+> files remain unchanged, and the audit does not create archival copies.
+> Writer coverage is incomplete and accepted replacements still retain a
+> delete-before-write failure risk. Do not use this branch for production
+> reingestion. See [scope, commands, and deployment blockers](docs/ingestion-safeguards.md)
+> and [implementation/verification evidence](docs/reviews/ingestion-safeguards/README.md).
+
 > [!CAUTION]
 > **Beware of impostor sites.** MemPalace has no other official websites. The **only** official sources are this **[GitHub repository](https://github.com/MemPalace/mempalace)**, the **[PyPI package](https://pypi.org/project/mempalace/)**, and the docs at **[mempalaceofficial.com](https://mempalaceofficial.com)**. Any other domain (including `.tech`, `.net`, or other `.com` variants) is an impostor and may distribute malware. Details and timeline: [docs/HISTORY.md](docs/HISTORY.md).
 

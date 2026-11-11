@@ -1,0 +1,5 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+.                                                                        [100%]
+1 passed in 0.03s
+
+EXIT STATUS: 0

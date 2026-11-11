@@ -1,0 +1,161 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_mcp_admission.py
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+__________ test_mcp_writers_reject_before_wal_embedding_or_purge[add] __________
+
+handlers = ({'__name__': 'mempalace.mcp_server', '__package__': 'mempalace.mcp_server', 'Optional': typing.Optional, 'datetime': ...s': True, 'drawer_id': 'drawer_synthetic_facts_d87cde8f52b3fb80619d7f58', 'wing': 'synthetic', 'room': 'facts', ...})])
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7420155e0440>, <test_writers.StorageSpy object ...utput", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_S', 'ENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}'])
+operation = 'add'
+
+    @pytest.mark.parametrize("operation", ["add", "update", "diary", "checkpoint"])
+    def test_mcp_writers_reject_before_wal_embedding_or_purge(handlers, writer_spies, operation):
+        namespace, events = handlers
+        _, storage, embedded = writer_spies
+        if operation == "add":
+            result = namespace["tool_add_drawer"]("synthetic", "facts", codex_fragments())
+        elif operation == "update":
+            result = namespace["tool_update_drawer"]("old", content=codex_fragments())
+        elif operation == "diary":
+            result = namespace["tool_diary_write"]("synthetic", codex_fragments())
+        else:
+            result = namespace["tool_checkpoint"]([{"wing": "synthetic", "room": "facts", "content": codex_fragments()}])
+>       assert not result.get("success", False)
+E       AssertionError: assert not True
+E        +  where True = <built-in method get of dict object at 0x7420152dac40>('success', False)
+E        +    where <built-in method get of dict object at 0x7420152dac40> = {'success': True, 'drawer_id': 'drawer_synthetic_facts_d87cde8f52b3fb80619d7f58', 'wing': 'synthetic', 'room': 'facts', ...}.get
+
+tests/test_mcp_admission.py:60: AssertionError
+________ test_mcp_writers_reject_before_wal_embedding_or_purge[update] _________
+
+handlers = ({'__name__': 'mempalace.mcp_server', '__package__': 'mempalace.mcp_server', 'Optional': typing.Optional, 'datetime': ...etime'>, ...}, [('update_drawer', {'drawer_id': 'old', 'old_wing': '', 'old_room': '', 'new_wing': '', ...}), 'purge'])
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7420155e3e60>, <test_writers.StorageSpy object ...utput", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_S', 'ENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}'])
+operation = 'update'
+
+    @pytest.mark.parametrize("operation", ["add", "update", "diary", "checkpoint"])
+    def test_mcp_writers_reject_before_wal_embedding_or_purge(handlers, writer_spies, operation):
+        namespace, events = handlers
+        _, storage, embedded = writer_spies
+        if operation == "add":
+            result = namespace["tool_add_drawer"]("synthetic", "facts", codex_fragments())
+        elif operation == "update":
+            result = namespace["tool_update_drawer"]("old", content=codex_fragments())
+        elif operation == "diary":
+            result = namespace["tool_diary_write"]("synthetic", codex_fragments())
+        else:
+            result = namespace["tool_checkpoint"]([{"wing": "synthetic", "room": "facts", "content": codex_fragments()}])
+>       assert not result.get("success", False)
+E       AssertionError: assert not True
+E        +  where True = <built-in method get of dict object at 0x742015243440>('success', False)
+E        +    where <built-in method get of dict object at 0x742015243440> = {'success': True, 'drawer_id': 'old', 'wing': '', 'room': '', ...}.get
+
+tests/test_mcp_admission.py:60: AssertionError
+_________ test_mcp_writers_reject_before_wal_embedding_or_purge[diary] _________
+
+handlers = ({'__name__': 'mempalace.mcp_server', '__package__': 'mempalace.mcp_server', 'Optional': typing.Optional, 'datetime': ...EN_OPAQUE_SENTINEL"}}\n{"type": "response_item", "payload": {"type": "function_call_output", "output": "{\\"rawOut'})])
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7420155e12b0>, <test_writers.StorageSpy object ...utput", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_S', 'ENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}'])
+operation = 'diary'
+
+    @pytest.mark.parametrize("operation", ["add", "update", "diary", "checkpoint"])
+    def test_mcp_writers_reject_before_wal_embedding_or_purge(handlers, writer_spies, operation):
+        namespace, events = handlers
+        _, storage, embedded = writer_spies
+        if operation == "add":
+            result = namespace["tool_add_drawer"]("synthetic", "facts", codex_fragments())
+        elif operation == "update":
+            result = namespace["tool_update_drawer"]("old", content=codex_fragments())
+        elif operation == "diary":
+            result = namespace["tool_diary_write"]("synthetic", codex_fragments())
+        else:
+            result = namespace["tool_checkpoint"]([{"wing": "synthetic", "room": "facts", "content": codex_fragments()}])
+>       assert not result.get("success", False)
+E       AssertionError: assert not True
+E        +  where True = <built-in method get of dict object at 0x7420151d6100>('success', False)
+E        +    where <built-in method get of dict object at 0x7420151d6100> = {'success': True, 'entry_id': 'diary_wing_synthetic_20261111_111238288351_7615b5654dd3', 'agent': 'synthetic', 'topic': 'general', ...}.get
+
+tests/test_mcp_admission.py:60: AssertionError
+______ test_mcp_writers_reject_before_wal_embedding_or_purge[checkpoint] _______
+
+handlers = ({'__name__': 'mempalace.mcp_server', '__package__': 'mempalace.mcp_server', 'Optional': typing.Optional, 'datetime': ...s': True, 'drawer_id': 'drawer_synthetic_facts_d87cde8f52b3fb80619d7f58', 'wing': 'synthetic', 'room': 'facts', ...})])
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7420152e2810>, <test_writers.StorageSpy object ...utput", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_S', 'ENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}'])
+operation = 'checkpoint'
+
+    @pytest.mark.parametrize("operation", ["add", "update", "diary", "checkpoint"])
+    def test_mcp_writers_reject_before_wal_embedding_or_purge(handlers, writer_spies, operation):
+        namespace, events = handlers
+        _, storage, embedded = writer_spies
+        if operation == "add":
+            result = namespace["tool_add_drawer"]("synthetic", "facts", codex_fragments())
+        elif operation == "update":
+            result = namespace["tool_update_drawer"]("old", content=codex_fragments())
+        elif operation == "diary":
+            result = namespace["tool_diary_write"]("synthetic", codex_fragments())
+        else:
+            result = namespace["tool_checkpoint"]([{"wing": "synthetic", "room": "facts", "content": codex_fragments()}])
+        assert not result.get("success", False)
+>       assert events == [] and embedded == [] and storage.writes == [] and storage.deletes == []
+E       assert ([('duplicate_...facts', ...})] == []
+E         
+E         Left contains 3 more items, first extra item: ('duplicate_embedding', '{"type": "response_item", "payload": {"type": "reasoning", "encrypted_content": "FORBIDDEN_OP...all_output", "output": "{\\"rawOutput\\": {\\"base64\\": \\"FORBIDDEN_OPAQUE_SENTINEL\\", \\"bytes\\": [1, 2, 3]}}"}}')
+E         Use -v to get more diff)
+
+tests/test_mcp_admission.py:61: AssertionError
+_________ test_mcp_selected_evidence_and_metadata_remain_aligned[add] __________
+
+handlers = ({'__name__': 'mempalace.mcp_server', '__package__': 'mempalace.mcp_server', 'Optional': typing.Optional, 'datetime': ...s': True, 'drawer_id': 'drawer_synthetic_facts_0c1b20dcc645efab210d2250', 'wing': 'synthetic', 'room': 'facts', ...})])
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7420152e30b0>, <test_writers.StorageSpy object ...152e30e0>, ['{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN', '_OPAQUE_SENTINEL"}}'])
+operation = 'add'
+
+    @pytest.mark.parametrize("operation", ["add", "diary"])
+    def test_mcp_selected_evidence_and_metadata_remain_aligned(handlers, writer_spies, operation):
+        namespace, events = handlers
+        _, storage, embedded = writer_spies
+        text = json.dumps({"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": OPAQUE}})
+        if operation == "add":
+            result = namespace["tool_add_drawer"]("synthetic", "facts", text, source_file="synthetic.json")
+        else:
+            result = namespace["tool_diary_write"]("synthetic", text)
+        assert result["success"]
+>       assert "missing synthetic header" in "".join(embedded) and OPAQUE not in "".join(embedded)
+E       assert ('missing synthetic header' in '{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}' and 'FORBIDDEN_OPAQUE_SENTINEL' not in '{"stderr": ..._SENTINEL"}}'
+E        +  where '{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}' = <built-in method join of str object at 0x136df28>(['{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN', '_OPAQUE_SENTINEL"}}'])
+E        +    where <built-in method join of str object at 0x136df28> = ''.join
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           base64": "FORBIDDEN_OPAQUE_SENTINEL"}})
+
+tests/test_mcp_admission.py:75: AssertionError
+________ test_mcp_selected_evidence_and_metadata_remain_aligned[diary] _________
+
+handlers = ({'__name__': 'mempalace.mcp_server', '__package__': 'mempalace.mcp_server', 'Optional': typing.Optional, 'datetime': ...try_preview': '{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}'})])
+writer_spies = (<mempalace.backends.embedding_wrapper.EmbeddingCollection object at 0x7420152e3b00>, <test_writers.StorageSpy object ...152e3ad0>, ['{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN', '_OPAQUE_SENTINEL"}}'])
+operation = 'diary'
+
+    @pytest.mark.parametrize("operation", ["add", "diary"])
+    def test_mcp_selected_evidence_and_metadata_remain_aligned(handlers, writer_spies, operation):
+        namespace, events = handlers
+        _, storage, embedded = writer_spies
+        text = json.dumps({"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": OPAQUE}})
+        if operation == "add":
+            result = namespace["tool_add_drawer"]("synthetic", "facts", text, source_file="synthetic.json")
+        else:
+            result = namespace["tool_diary_write"]("synthetic", text)
+        assert result["success"]
+>       assert "missing synthetic header" in "".join(embedded) and OPAQUE not in "".join(embedded)
+E       assert ('missing synthetic header' in '{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}' and 'FORBIDDEN_OPAQUE_SENTINEL' not in '{"stderr": ..._SENTINEL"}}'
+E        +  where '{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}' = <built-in method join of str object at 0x136df28>(['{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN', '_OPAQUE_SENTINEL"}}'])
+E        +    where <built-in method join of str object at 0x136df28> = ''.join
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           base64": "FORBIDDEN_OPAQUE_SENTINEL"}})
+
+tests/test_mcp_admission.py:75: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_mcp_admission.py::test_mcp_writers_reject_before_wal_embedding_or_purge[add]
+FAILED tests/test_mcp_admission.py::test_mcp_writers_reject_before_wal_embedding_or_purge[update]
+FAILED tests/test_mcp_admission.py::test_mcp_writers_reject_before_wal_embedding_or_purge[diary]
+FAILED tests/test_mcp_admission.py::test_mcp_writers_reject_before_wal_embedding_or_purge[checkpoint]
+FAILED tests/test_mcp_admission.py::test_mcp_selected_evidence_and_metadata_remain_aligned[add]
+FAILED tests/test_mcp_admission.py::test_mcp_selected_evidence_and_metadata_remain_aligned[diary]
+6 failed in 0.87s
+
+EXIT STATUS: 1

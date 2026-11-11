@@ -1,0 +1,10 @@
+{
+  "mempalace/ingestion.py": "c0c538680911650f463c1ddf038c38f580a8ca9e069b4af06b9d40f7d73943d2",
+  "tests/ingestion_safeguards/conftest.py": "6f229e6b374f6451fb04dd4e9f77241427111e5df5b87d48ff12fd41968ba522",
+  "tests/ingestion_safeguards/test_ingestion.py": "ea09870cc5a76808e14ecf1ad636b2fcef015c8424bfa08ec24af168c5c0fc64",
+  "tests/ingestion_safeguards/test_mcp_admission.py": "d70484ad4a8a295bfad4d4e34369357b4e505b8c60b217fba1f2b53c12cafb55",
+  "tests/ingestion_safeguards/test_review_fixes.py": "044d21ac05a1187c52c0fb399628d3a7223f58b9cea5a1bd3b43b064413e2f38",
+  "tests/ingestion_safeguards/test_review_second_fixes.py": "38e75993a573ff9dc5b61fbab9718639feec7adc8835471f0d7eed7af8095b3c",
+  "tests/ingestion_safeguards/test_shadow_audit.py": "9310e3489f664500a2841e157cc8b88417001b75862867bdcbfa308580a992ec",
+  "tests/ingestion_safeguards/test_writers.py": "59f5622894a485d243e9bdf2290fef9a54cb9a6f5f354095a81bf538a97620f4"
+}

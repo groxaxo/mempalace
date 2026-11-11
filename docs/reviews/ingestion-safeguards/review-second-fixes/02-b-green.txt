@@ -1,0 +1,49 @@
+cwd: <publication>
+$ env TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 PYTHONDONTWRITEBYTECODE=1 <snapshot>/.venv/bin/python -m pytest tests/ingestion_safeguards/test_review_second_fixes.py -k python -vv --tb=short
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- <snapshot>/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: <publication>
+configfile: pyproject.toml
+plugins: anyio-4.16.0
+collecting ... collected 53 items / 20 deselected / 33 selected
+
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[exact-review-repro] PASSED [  3%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[single] PASSED [  6%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[raw-double] PASSED [  9%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[raw-uppercase-single] PASSED [ 12%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[unicode-double] PASSED [ 15%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[bytes-single] PASSED [ 18%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[bytes-raw-double] PASSED [ 21%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[raw-bytes-single] PASSED [ 24%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_triple_literals_remain_verbatim[uppercase-bytes-raw-double] PASSED [ 27%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[exact-review-repro] PASSED [ 30%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[single] PASSED [ 33%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[raw-double] PASSED [ 36%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[raw-uppercase-single] PASSED [ 39%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[unicode-double] PASSED [ 42%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[bytes-single] PASSED [ 45%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[bytes-raw-double] PASSED [ 48%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[raw-bytes-single] PASSED [ 51%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_project_writer_preserves_python_triple_literals[uppercase-bytes-raw-double] PASSED [ 54%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[open-double-triple] PASSED [ 57%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[open-single-triple] PASSED [ 60%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-prefix] PASSED [ 63%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-bytes] PASSED [ 66%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[f-string-call] PASSED [ 69%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[call-expression] PASSED [ 72%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-number-1__0] PASSED [ 75%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-number-1_] PASSED [ 78%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-number-0x__1] PASSED [ 81%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-number-0b1__0] PASSED [ 84%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-number-1_.0] PASSED [ 87%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_invalid_python_or_executable_expressions_cannot_bypass_refusal[invalid-number-1e_2] PASSED [ 90%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_syntax_does_not_override_supported_envelope_refusal[codex] PASSED [ 93%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_syntax_does_not_override_supported_envelope_refusal[messages] PASSED [ 96%]
+tests/ingestion_safeguards/test_review_second_fixes.py::test_valid_python_syntax_does_not_override_supported_envelope_refusal[claude-code] PASSED [100%]
+
+====================== 33 passed, 20 deselected in 0.21s =======================
+
+exit_status: 0
+elapsed_seconds: 1.168774

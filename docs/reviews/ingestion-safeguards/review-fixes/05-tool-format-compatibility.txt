@@ -1,0 +1,28 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 <snapshot>/.venv/bin/python -m pytest tests/test_normalize.py -k format_tool_result -v --tb=short
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- <snapshot>/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: <publication>
+configfile: pyproject.toml
+plugins: anyio-4.16.0
+collecting ... collected 161 items / 148 deselected / 13 selected
+
+tests/test_normalize.py::test_format_tool_result_bash_short PASSED       [  7%]
+tests/test_normalize.py::test_format_tool_result_bash_head_tail PASSED   [ 15%]
+tests/test_normalize.py::test_format_tool_result_bash_exactly_40_lines PASSED [ 23%]
+tests/test_normalize.py::test_format_tool_result_read_omitted PASSED     [ 30%]
+tests/test_normalize.py::test_format_tool_result_edit_omitted PASSED     [ 38%]
+tests/test_normalize.py::test_format_tool_result_write_omitted PASSED    [ 46%]
+tests/test_normalize.py::test_format_tool_result_grep_short PASSED       [ 53%]
+tests/test_normalize.py::test_format_tool_result_grep_caps_at_20 PASSED  [ 61%]
+tests/test_normalize.py::test_format_tool_result_glob_caps_at_20 PASSED  [ 69%]
+tests/test_normalize.py::test_format_tool_result_unknown_short PASSED    [ 76%]
+tests/test_normalize.py::test_format_tool_result_unknown_truncates PASSED [ 84%]
+tests/test_normalize.py::test_format_tool_result_list_content PASSED     [ 92%]
+tests/test_normalize.py::test_format_tool_result_empty PASSED            [100%]
+
+====================== 13 passed, 148 deselected in 0.12s ======================
+
+EXIT STATUS: 0

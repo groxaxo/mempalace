@@ -1,0 +1,71 @@
+TMPDIR=<snapshot>/test-tmp .venv/bin/python -m pytest -q tests/test_ingestion.py
+.....................................FFF..F                              [100%]
+=================================== FAILURES ===================================
+____ test_nested_serialized_raw_buffer_and_buffer_only_results_are_not_text ____
+
+    def test_nested_serialized_raw_buffer_and_buffer_only_results_are_not_text():
+        from mempalace.normalize import _format_tool_result
+    
+        text = json.dumps({"stderr": "Permission denied: synthetic path", "rawOutput": json.dumps({
+            "base64": OPAQUE, "bytes": [3, 5, 7]})})
+        result = _format_tool_result(text, "Unknown")
+>       assert "Permission denied" in result and OPAQUE not in result
+E       assert ('Permission denied' in '→ {"stderr": "Permission denied: synthetic path", "rawOutput": "{\\"base64\\": \\"FORBIDDEN_OPAQUE_SENTINEL\\", \\"bytes\\": [3, 5, 7]}"}' and 'FORBIDDEN_OPAQUE_SENTINEL' not in '→ {"stderr"...[3, 5, 7]}"}'
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           se64\": \"FORBIDDEN_OPAQUE_SENTINEL\", \"bytes\": [3, 5, 7]}"})
+
+tests/test_ingestion.py:225: AssertionError
+_____ test_codex_canonical_message_strings_are_selected_before_flattening ______
+
+tmp_path = PosixPath('<snapshot>/test-tmp/pytest-of-op/pytest-22/test_codex_canonical_message_s0')
+
+    def test_codex_canonical_message_strings_are_selected_before_flattening(tmp_path):
+        source = tmp_path / "canonical-with-transport.jsonl"
+        source.write_text("\n".join(json.dumps(event) for event in [
+            {"type": "session_meta"},
+            {"type": "event_msg", "payload": {"type": "user_message", "message": "Explain this error"}},
+            {"type": "event_msg", "payload": {"type": "agent_message", "message": json.dumps({
+                "stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": OPAQUE}})}},
+        ]))
+        result = normalize_conversations(str(source))[0]
+>       assert "missing synthetic header" in result and OPAQUE not in result
+E       assert ('missing synthetic header' in '> Explain this error\n{"stderr": "ERROR: missing synthetic header", "rawOutput": {"base64": "FORBIDDEN_OPAQUE_SENTINEL"}}\n' and 'FORBIDDEN_OPAQUE_SENTINEL' not in '> Explain t...ENTINEL"}}\n'
+E         
+E         'FORBIDDEN_OPAQUE_SENTINEL' is contained here:
+E           base64": "FORBIDDEN_OPAQUE_SENTINEL"}})
+
+tests/test_ingestion.py:238: AssertionError
+_________ test_oversized_tool_block_list_is_omitted_before_flattening __________
+
+    def test_oversized_tool_block_list_is_omitted_before_flattening():
+        from mempalace.normalize import _format_tool_result
+    
+>       assert _format_tool_result([{"type": "text", "text": "x" * 2_000_000}], "Unknown") == ""
+E       AssertionError: assert '→ xxxxxxxxxx...xxxxxxxxxxxxx' == ''
+E         
+E         + → xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx [ingestion omitted: tool_line_bytes] xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+tests/test_ingestion.py:244: AssertionError
+________ test_config_with_type_image_but_no_media_payload_is_preserved _________
+
+    def test_config_with_type_image_but_no_media_payload_is_preserved():
+        from mempalace.ingestion import admit_text
+    
+        content = '{"type":"image","description":"image is a valid config choice"}'
+        result = admit_text(content)
+>       assert result.decision == "keep" and result.text == content
+E       AssertionError: assert ('archive-only' == 'keep'
+E         
+E         - keep
+E         + archive-only)
+
+tests/test_ingestion.py:263: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ingestion.py::test_nested_serialized_raw_buffer_and_buffer_only_results_are_not_text
+FAILED tests/test_ingestion.py::test_codex_canonical_message_strings_are_selected_before_flattening
+FAILED tests/test_ingestion.py::test_oversized_tool_block_list_is_omitted_before_flattening
+FAILED tests/test_ingestion.py::test_config_with_type_image_but_no_media_payload_is_preserved
+4 failed, 39 passed in 0.15s
+
+EXIT STATUS: 1

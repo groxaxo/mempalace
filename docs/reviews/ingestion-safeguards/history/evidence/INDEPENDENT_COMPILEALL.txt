@@ -1,0 +1,3 @@
+COMMAND: TMPDIR=<snapshot>/test-tmp .venv/bin/python -m compileall -q mempalace tests scripts deployment_reference
+EXIT STATUS: 0
+

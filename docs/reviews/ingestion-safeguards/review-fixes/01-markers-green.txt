@@ -1,0 +1,41 @@
+CWD: <publication>
+COMMAND: TZ=UTC TMPDIR=<publication>/test-tmp HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 <snapshot>/.venv/bin/python -m pytest tests/ingestion_safeguards/test_review_fixes.py -v --tb=short
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0 -- <snapshot>/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: <publication>
+configfile: pyproject.toml
+plugins: anyio-4.16.0
+collecting ... collected 26 items
+
+tests/ingestion_safeguards/test_review_fixes.py::test_literal_omission_markers_remain_indexable_content[prose] PASSED [  3%]
+tests/ingestion_safeguards/test_review_fixes.py::test_literal_omission_markers_remain_indexable_content[fenced] PASSED [  7%]
+tests/ingestion_safeguards/test_review_fixes.py::test_literal_omission_markers_remain_indexable_content[config] PASSED [ 11%]
+tests/ingestion_safeguards/test_review_fixes.py::test_literal_omission_markers_remain_indexable_content[only] PASSED [ 15%]
+tests/ingestion_safeguards/test_review_fixes.py::test_literal_omission_markers_remain_indexable_content[unicode] PASSED [ 19%]
+tests/ingestion_safeguards/test_review_fixes.py::test_identical_literal_and_real_omission_have_separate_provenance PASSED [ 23%]
+tests/ingestion_safeguards/test_review_fixes.py::test_selected_tool_blocks_survive_normalizer_joins_and_merges PASSED [ 26%]
+tests/ingestion_safeguards/test_review_fixes.py::test_tool_byte_caps_preserve_retained_literals_without_annotation_fragments[220] PASSED [ 30%]
+tests/ingestion_safeguards/test_review_fixes.py::test_tool_byte_caps_preserve_retained_literals_without_annotation_fragments[377] PASSED [ 34%]
+tests/ingestion_safeguards/test_review_fixes.py::test_tool_byte_caps_preserve_retained_literals_without_annotation_fragments[479] PASSED [ 38%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[prose-live] PASSED [ 42%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[prose-manual] PASSED [ 46%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[prose-project] PASSED [ 50%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[fenced-live] PASSED [ 53%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[fenced-manual] PASSED [ 57%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[fenced-project] PASSED [ 61%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[config-live] PASSED [ 65%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[config-manual] PASSED [ 69%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[config-project] PASSED [ 73%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[only-live] PASSED [ 76%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[only-manual] PASSED [ 80%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_literal_documents_and_admission_metadata[only-project] PASSED [ 84%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_mixed_literal_and_omission_metadata[live] PASSED [ 88%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_mixed_literal_and_omission_metadata[manual] PASSED [ 92%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_mixed_literal_and_omission_metadata[project] PASSED [ 96%]
+tests/ingestion_safeguards/test_review_fixes.py::test_writers_preserve_mixed_literal_and_omission_metadata[conversation] PASSED [100%]
+
+============================== 26 passed in 0.19s ==============================
+
+EXIT STATUS: 0

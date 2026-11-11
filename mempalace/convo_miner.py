@@ -28,7 +28,8 @@ from .ids import (
     make_convo_sentinel_id,
     make_exchange_drawer_id,
 )
-from .normalize import UnparsedCodexTranscriptError, normalize_conversations
+from .normalize import _read_transcript_file
+from .ingestion import NonIndexableContentError, admit_text, indexing_text
 from .source_identity import identity_metadata, source_directory_identity
 from .entities import entities_metadata
 from .palace import (
@@ -111,9 +112,11 @@ def file_conversation_exchange(
     """
     from .config import sanitize_name
 
-    text = (text or "").strip()
-    if not text:
+    admission = admit_text(text or "", source=source_file)
+    if not admission.indexable:
+        logger.warning("Skipping %s: %s", source_file, ",".join(admission.reasons))
         return None
+    text = indexing_text(admission.text)
     try:
         wing = sanitize_name(wing, "wing")
     except ValueError:
@@ -151,6 +154,7 @@ def file_conversation_exchange(
         # Same directory identity a mined drawer carries, so ``sync`` decides
         # a live exchange and a historical one by the same rule (#2320).
         **identity_metadata(source_file),
+        **admission.metadata(),
     }
     if extra_metadata:
         for key, value in extra_metadata.items():
@@ -690,6 +694,7 @@ def _file_chunks_locked(
     authored_at=None,
     content_hash=None,
     source_dir_ino=None,
+    admission_metadata=None,
 ):
     """Lock the source file, purge stale drawers, and upsert fresh chunks.
 
@@ -703,10 +708,38 @@ def _file_chunks_locked(
 
     Returns (drawers_added, room_counts_delta, skipped). ``skipped`` is
     :data:`PURGE_FAILED` when the stale-drawer purge raised, which the mine
-    counts as an error rather than a skip.
+    counts as an error rather than a skip. Admission refusals return
+    ``admission_rejected`` before acquiring the lock or deleting anything.
+    ``admission_metadata`` is source-level context supplied by the miner
+    after admission and before chunking, not a storage-layer security gate.
     """
     room_counts_delta: dict = defaultdict(int)
     drawers_added = 0
+    admitted_chunks = []
+    for chunk in chunks:
+        if admission_metadata is not None:
+            # The source was classified before chunking. Re-parsing a chunk
+            # would discard its code-fence/prose context and misclassify a
+            # literal format example as a new raw transcript.
+            valid = admission_metadata.get("ingestion_policy") == 1 and admission_metadata.get(
+                "ingestion_decision"
+            ) in ("keep", "sanitize")
+            text = indexing_text(chunk["content"])
+            metadata = admission_metadata
+        else:
+            admission = admit_text(chunk["content"], source=source_file)
+            valid, text, metadata = (
+                admission.indexable,
+                indexing_text(admission.text),
+                admission.metadata(),
+            )
+        if not valid or not text:
+            logger.warning("Skipping %s: admission_rejected", source_file)
+            return 0, room_counts_delta, "admission_rejected"
+        admitted_chunks.append({**chunk, "content": text, "admission_metadata": metadata})
+    if not admitted_chunks:
+        return 0, room_counts_delta, "admission_rejected"
+    chunks = admitted_chunks
     with mine_lock(source_file):
         # Re-check after lock — another agent may have just finished this file
         # at the current schema/mtime. A stale hit here returns False, so we
@@ -791,6 +824,7 @@ def _file_chunks_locked(
                     }
                     if extract_mode == "exchange":
                         meta["convo_chunker_version"] = CONVO_CHUNKER_VERSION
+                    meta.update(chunk["admission_metadata"])
                     if source_mtime is not None:
                         meta["source_mtime"] = source_mtime
                     if source_dir_ino:
@@ -1020,11 +1054,12 @@ def _normalize_convo_conversations(
     agent: str,
     extract_mode: str,
     dry_run: bool,
+    admission_metadata: Optional[dict] = None,
 ) -> Optional[list]:
-    """Normalize a transcript file into its individual conversations,
-    registering it as filed when there's nothing worth mining. Returns None
+    """Admit a source and normalize it into individual conversations. Returns None
     when the caller should skip the file (normalize failed, or the normalized
-    content is only whitespace). A short transcript is still mined: the
+    content is only whitespace), without recording a successful refresh.
+    A short transcript is still mined: the
     chunker keeps text below the min chunk size rather than dropping it.
 
     Kept as separate conversations rather than joined into one string so
@@ -1034,18 +1069,19 @@ def _normalize_convo_conversations(
     whole-file hash and hides the conversations that didn't change.
     """
     try:
-        conversations = [c for c in normalize_conversations(str(filepath)) if c]
-    except UnparsedCodexTranscriptError as exc:
+        admission = admit_text(_read_transcript_file(str(filepath)), source=source_file)
+        conversations = [
+            indexing_text(c) for c in admission.require_conversations() if indexing_text(c)
+        ]
+        if admission_metadata is not None:
+            admission_metadata.update(admission.metadata())
+    except NonIndexableContentError as exc:
         logger.warning("Skipping %s: %s; source remains eligible for retry", filepath, exc)
         return None
     except (OSError, ValueError):
-        if not dry_run:
-            _register_file(collection, source_file, wing, agent, extract_mode)
         return None
 
     if not any(c.strip() for c in conversations):
-        if not dry_run:
-            _register_file(collection, source_file, wing, agent, extract_mode)
         return None
 
     return conversations
@@ -1194,6 +1230,7 @@ def _mine_convos_impl(
             files_skipped += 1
             continue
 
+        admission_metadata = {}
         conversations = _normalize_convo_conversations(
             filepath,
             source_file,
@@ -1202,6 +1239,7 @@ def _mine_convos_impl(
             agent,
             extract_mode,
             dry_run,
+            admission_metadata,
         )
         if conversations is None:
             continue
@@ -1291,6 +1329,7 @@ def _mine_convos_impl(
             authored_at=_extract_authored_at(filepath),
             content_hash=content_hash,
             source_dir_ino=source_directory_identity(filepath),
+            admission_metadata=admission_metadata,
         )
         if skipped == PURGE_FAILED:
             files_failed.append(source_file)

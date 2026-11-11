@@ -1,0 +1,23 @@
+{
+  "baseline": "88222ec8be25295c6ea2155ee6cdcf89c58e58fd",
+  "files": {
+    "FINAL_REPORT.md": "2d156c77d61de38e7470e41a4026ccd1f2169f48f4da83dcedd0f28d24e73dd7",
+    "mempalace/convo_miner.py": "3a53e511c75dfb921cdeae841347f10e4d63eba142515cfd87a3487fc187cc67",
+    "mempalace/ingestion.py": "e8501eb8f1b831d7e738a642794ac3c85ce676fd4eb53ebcaacc4274065eb259",
+    "mempalace/ingestion_audit.py": "d2c52869bcf8affc23b30ebbc7ac4b8be944fdb162c5c9ea6f4ce330b3f3bba8",
+    "mempalace/mcp_server/tools_diary.py": "5e4c4fb9807b8b088687bef1775f630cbc9cd50088afbfa8bf0d1d6c520a299e",
+    "mempalace/mcp_server/tools_write.py": "a4a0c1619f82f73561b8bfa1e47158878884a5e4ebee49b3625eee30326c8450",
+    "mempalace/miner.py": "67ef122290f7921990362af94e68571621bbdd47d7554cf69747f05e491dd687",
+    "mempalace/normalize.py": "339d484e77caa694a6bb4b9e226f6624fc2d9ffd1fec278de4a87fd81fac5890",
+    "scripts/record_check.py": "1079d3b1c73c5ce9c1df0a612384d88ad99570ecfa493e2c88b34a5009e2859b",
+    "scripts/shadow_demo.py": "5315412729b5a854aa17fc7d179d1a1101410c57d4e0e75dfe6a308bcd2214d4",
+    "tests/conftest.py": "3ca880b91657e60078893e78ab2e643748271025958c48d5f978456717685e3e",
+    "tests/test_ingestion.py": "fa5bb7dccc1ffda7a0ecfd03b9de39e1a5a64bb1bf8d802716f5baa34a0b52c6",
+    "tests/test_mcp_admission.py": "f9c73eda53599b0506d3a95b2b99cca864303ffeb3bc7394f22dea13f9afd7bb",
+    "tests/test_shadow_audit.py": "a1d2adb369ab99801a453507aba8434f173ed4c528730719c8b606f1abe81718",
+    "tests/test_writers.py": "cba65d37a35d8ab5e125008c0d89ce450f134f3d17e8cbd755fd9f99b84a8e22"
+  },
+  "patch_sha256": "c9f075323d197485bb6e8c4d12f22ea637d4aff675d21db10f6b148fc99c2d8a",
+  "pytest": "9.2.0",
+  "python": "3.12.16"
+}
