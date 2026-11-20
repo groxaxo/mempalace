@@ -103,11 +103,11 @@ def main():
     p_init.add_argument(
         "--embedding-model",
         default=None,
-        choices=["embeddinggemma", "embeddinggemma2", "minilm", "openai-compat"],
+        choices=["embeddinggemma", "embeddinggemma2", "minilm", "nemotron-vllm", "openai-compat"],
         help=(
             "Embedding model to record in config.json for this palace. "
             "embeddinggemma is multilingual (~300 MB download); minilm is "
-            "English-only (~30 MB). Left unset, the configured or default model applies."
+            "English-only (~30 MB). This fork defaults to nemotron-vllm."
         ),
     )
     p_init.add_argument(

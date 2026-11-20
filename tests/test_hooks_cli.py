@@ -376,6 +376,27 @@ def test_extract_recent_messages_skips_boilerplate_in_codex_format(tmp_path):
     assert _extract_recent_messages(str(transcript)) == ["review the diff"]
 
 
+def test_extract_recent_messages_uses_codex_response_items_without_duplicates(tmp_path):
+    transcript = tmp_path / "codex.jsonl"
+    item = {
+        "type": "response_item",
+        "payload": {
+            "type": "message",
+            "role": "user",
+            "content": [{"type": "input_text", "text": "retain this user turn"}],
+        },
+    }
+    transcript.write_text(json.dumps(item) + "\n", encoding="utf-8")
+    assert _extract_recent_messages(str(transcript)) == ["retain this user turn"]
+    event = {
+        "type": "event_msg",
+        "payload": {"type": "user_message", "message": "retain this user turn"},
+    }
+    with transcript.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event) + "\n")
+    assert _extract_recent_messages(str(transcript)) == ["retain this user turn"]
+
+
 def test_extract_recent_messages_keeps_text_mentioning_a_marker_word(tmp_path):
     """Only the literal wrappers are filtered, not ordinary talk about them."""
     transcript = tmp_path / "t.jsonl"

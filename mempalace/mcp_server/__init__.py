@@ -199,6 +199,7 @@ _FRAGMENTS = (
     "tools_write.py",
     "tools_kg.py",
     "tools_diary.py",
+    "tools_hooks.py",
     "tools_coord.py",
     "schemas.py",
     "protocol.py",

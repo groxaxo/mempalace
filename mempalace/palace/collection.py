@@ -135,7 +135,7 @@ def _enforce_embedder_identity(
         EmbedderIdentityUnknownWarning,
         check_embedder_identity,
     )
-    from ..embedding import current_model_name
+    from ..embedding import _NEMOTRON_VLLM_DIMENSION, _NEMOTRON_VLLM_IDENTITY, current_model_name
 
     # A server_embedder backend embeds with its own model and ignores the
     # injected/core embedder, so its effective identity — not the configured
@@ -153,7 +153,8 @@ def _enforce_embedder_identity(
             return
         if not model_name:
             return  # nameless embedder — cannot enforce identity
-        current = EmbedderIdentity(model_name=model_name, dimension=0)
+        dimension = _NEMOTRON_VLLM_DIMENSION if model_name == _NEMOTRON_VLLM_IDENTITY else 0
+        current = EmbedderIdentity(model_name=model_name, dimension=dimension)
 
     model_name = current.model_name
     key = (str(palace_path), str(collection_name), model_name)

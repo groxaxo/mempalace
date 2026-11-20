@@ -30,6 +30,7 @@ READ_ONLY_REFUSED = {
     "mempalace_memories_filed_away",
     "mempalace_mine",
     "mempalace_patch_submit",
+    "mempalace_run_shared_hook",
     "mempalace_sync",
     "mempalace_task_create",
     "mempalace_update_drawer",

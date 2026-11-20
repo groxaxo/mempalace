@@ -157,7 +157,9 @@ def test_every_row_in_scope_feeds_the_fingerprint(monkeypatch, tmp_path, attr, s
         kind, value = scope
         if kind == "backend":
             backend = value
-        elif not value.startswith("!"):
+        elif kind == "embedding_api":
+            model = "nemotron-vllm"
+        elif kind == "embedding" and not value.startswith("!"):
             model = value
     monkeypatch.setattr("mempalace.palace.resolve_backend_name", lambda _path: backend)
     monkeypatch.setattr(MempalaceConfig, "embedding_model", property(lambda self: model))

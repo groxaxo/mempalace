@@ -29,15 +29,16 @@ HUB_TOOL_TIMEOUT_S = 120.0
 # a search local while any of these env vars is set, and the hub's registered
 # search fingerprint hashes the resolved values in scope, so a setting added
 # here reaches both checks. Scope is None (always), ("backend", name), or
-# ("embedding", model); a model prefixed with "!" means every other model.
+# ("embedding", model). The API and local scopes cover remote and local embeddings.
+_API_EMBEDDERS = frozenset({"openai-compat", "nemotron-vllm"})
 SEARCH_SETTINGS = (
     ("collection_name", (), None),
     ("lang_explicit", ("MEMPALACE_LANG", "MEMPAL_LANG"), None),
     ("hybrid_rank_vector_weight", ("MEMPALACE_HYBRID_VECTOR_WEIGHT",), None),
     ("hybrid_rank_bm25_weight", ("MEMPALACE_HYBRID_BM25_WEIGHT",), None),
-    ("embedding_api_key", ("MEMPALACE_EMBEDDING_API_KEY",), ("embedding", "openai-compat")),
-    ("embedding_api_model", ("MEMPALACE_EMBEDDING_API_MODEL",), ("embedding", "openai-compat")),
-    ("embedding_api_url", ("MEMPALACE_EMBEDDING_API_URL",), ("embedding", "openai-compat")),
+    ("embedding_api_key", ("MEMPALACE_EMBEDDING_API_KEY",), ("embedding_api", None)),
+    ("embedding_api_model", ("MEMPALACE_EMBEDDING_API_MODEL",), ("embedding_api", None)),
+    ("embedding_api_url", ("MEMPALACE_EMBEDDING_API_URL",), ("embedding_api", None)),
     (
         "embeddinggemma2_dimension",
         ("MEMPALACE_EMBEDDINGGEMMA2_DIMENSION",),
@@ -53,8 +54,8 @@ SEARCH_SETTINGS = (
         ("MEMPALACE_EMBEDDINGGEMMA2_REVISION",),
         ("embedding", "embeddinggemma2"),
     ),
-    ("embedding_device", ("MEMPALACE_EMBEDDING_DEVICE",), ("embedding", "!openai-compat")),
-    ("embedding_threads", ("MEMPALACE_EMBEDDING_THREADS",), ("embedding", "!openai-compat")),
+    ("embedding_device", ("MEMPALACE_EMBEDDING_DEVICE",), ("embedding_local", None)),
+    ("embedding_threads", ("MEMPALACE_EMBEDDING_THREADS",), ("embedding_local", None)),
     ("qdrant_api_key", ("MEMPALACE_QDRANT_API_KEY",), ("backend", "qdrant")),
     ("qdrant_namespace", ("MEMPALACE_QDRANT_NAMESPACE",), ("backend", "qdrant")),
     ("qdrant_timeout", ("MEMPALACE_QDRANT_TIMEOUT",), ("backend", "qdrant")),
@@ -119,6 +120,10 @@ def search_setting_in_scope(scope, backend: str, embedding_model: str) -> bool:
     if scope is None:
         return True
     kind, value = scope
+    if kind == "embedding_api":
+        return embedding_model in _API_EMBEDDERS
+    if kind == "embedding_local":
+        return embedding_model not in _API_EMBEDDERS
     current = backend if kind == "backend" else embedding_model
     if value.startswith("!"):
         return current != value[1:]

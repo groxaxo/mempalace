@@ -1118,6 +1118,19 @@ TOOLS = {
         },
         "handler": tool_artifact_get,
     },
+    "mempalace_run_shared_hook": {
+        "description": "Run a staged retention hook inside the canonical MCP writer.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "hook": {"type": "string", "enum": ["stop", "precompact", "session-end"]},
+                "harness": {"type": "string", "enum": ["codex", "claude-code"]},
+                "payload": {"type": "object"},
+            },
+            "required": ["hook", "harness", "payload"],
+        },
+        "handler": tool_run_shared_hook,
+    },
     "mempalace_patch_submit": {
         "description": (
             "Convenience: store a patch artifact and append its patch.ready event in one call."

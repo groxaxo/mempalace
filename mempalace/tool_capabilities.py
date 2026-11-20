@@ -56,6 +56,7 @@ TOOL_CAPABILITIES = {
     "mempalace_delete_drawer": ("write", "mutating vector_write"),
     "mempalace_delete_drawers": ("write", "mutating vector_write"),
     "mempalace_mine": ("maintenance", "mutating vector_write yielding"),
+    "mempalace_run_shared_hook": ("write", "mutating vector_write"),
     "mempalace_delete_by_source": ("write", "mutating vector_write"),
     "mempalace_sync": ("maintenance", "mutating vector_write"),
     "mempalace_get_drawer": ("read", ""),

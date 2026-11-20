@@ -6,7 +6,9 @@ if __name__ != "mempalace.mcp_server":
 # ==================== AGENT DIARY ====================
 
 
-def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing: str = ""):
+def tool_diary_write(
+    agent_name: str, entry: str, topic: str = "general", wing: str = "", *, _checkpoint_key=None
+):
     """
     Write a diary entry for this agent. Entries are timestamped and
     accumulate over time in a diary room.
@@ -43,6 +45,11 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing: 
         f"diary_{wing}_{now.strftime('%Y%m%d_%H%M%S%f')}_"
         f"{hashlib.sha256(entry.encode()).hexdigest()[:12]}"
     )
+    write = col.add
+    if _checkpoint_key is not None:
+        identity = json.dumps([wing, agent_name, _checkpoint_key, entry], ensure_ascii=False)
+        entry_id = f"diary_{wing}_checkpoint_{hashlib.sha256(identity.encode()).hexdigest()[:24]}"
+        write = col.upsert
 
     _wal_log(
         "diary_write",
@@ -71,7 +78,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing: 
         }
         chunk_size = _config.chunk_size
         if len(entry) <= chunk_size:
-            col.add(
+            write(
                 ids=[entry_id],
                 documents=[entry],
                 metadatas=[{**base_metadata, "chunk_index": 0}],
@@ -122,7 +129,7 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general", wing: 
                     "parent_drawer_id": entry_id,
                 }
             )
-        col.add(ids=chunk_ids, documents=chunk_docs, metadatas=chunk_metas)
+        write(ids=chunk_ids, documents=chunk_docs, metadatas=chunk_metas)
         logger.info(f"Diary entry: {entry_id} -> {wing}/diary/{topic} ({len(chunk_ids)} chunks)")
         return {
             "success": True,

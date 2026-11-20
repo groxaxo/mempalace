@@ -19,6 +19,7 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -42,8 +43,25 @@ from mempalace.write_routing import (
 )
 
 SAVE_INTERVAL = 15
-STATE_DIR = paths.state_path("hook_state")
+STATE_DIR = Path(
+    os.environ.get("MEMPALACE_SHARED_HOOK_STATE_DIR") or paths.state_path("hook_state")
+)
 PALACE_ROOT = paths.state_home()
+
+
+@dataclass(frozen=True)
+class SharedHookWriter:
+    """Callbacks owned by the MCP process that holds the palace writer lease."""
+
+    mine: Callable
+    diary: Callable
+    output: dict
+    source_harness: str
+
+
+SHARED_HOOK_WRITER: ContextVar[SharedHookWriter | None] = ContextVar(
+    "mempalace_shared_hook_writer", default=None
+)
 
 
 def _detached_popen_kwargs() -> dict:
@@ -281,6 +299,10 @@ def _output(data: dict):
     Otherwise, write directly to fd 1 so hook responses still go to stdout even
     if sys.stdout has been redirected elsewhere.
     """
+    shared_writer = SHARED_HOOK_WRITER.get()
+    if shared_writer is not None:
+        shared_writer.output.update(data)
+        return
     payload = (json.dumps(data, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
     real_stdout_fd: int | None = None
@@ -682,7 +704,15 @@ def _current_hook_write_routing() -> HookWriteRouting:
 def _hook_write_routing_context():
     """Share one policy resolution and one daemon probe across a hook fire."""
 
-    routing = _compute_hook_write_routing()
+    if SHARED_HOOK_WRITER.get() is None:
+        routing = _compute_hook_write_routing()
+    else:
+        routing = HookWriteRouting(
+            decision=choose_write_route(
+                WriteRoutingPolicy.DIRECT, daemon_available=False, daemon_can_start=False
+            ),
+            source="shared MCP writer",
+        )
     token = _HOOK_WRITE_ROUTING_CONTEXT.set(routing)
     try:
         yield routing
@@ -754,6 +784,15 @@ def _lock_deferral_reason(job: dict) -> str:
     return f"{reason} (job {job.get('id')} stays queued and runs when the holder exits)"
 
 
+def _run_shared_project_mines(targets: list[tuple[str, str]]) -> bool:
+    writer = SHARED_HOOK_WRITER.get()
+    if writer is None:
+        return False
+    for source, mode in targets:
+        writer.mine(source=source, mode=mode)
+    return True
+
+
 def _maybe_auto_ingest():
     """Background-mine MEMPAL_DIR (project files) if set.
 
@@ -768,7 +807,7 @@ def _maybe_auto_ingest():
     still running is silently skipped.
     """
     targets = _get_mine_targets()
-    if not targets:
+    if not targets or _run_shared_project_mines(targets):
         return
 
     routing = _current_hook_write_routing()
@@ -808,7 +847,7 @@ def _mine_sync():
     timeout stacking against the harness 30s ceiling.
     """
     targets = _get_mine_targets()
-    if not targets:
+    if not targets or _run_shared_project_mines(targets):
         return
 
     routing = _current_hook_write_routing()
@@ -935,6 +974,7 @@ def _extract_recent_messages(transcript_path: str, count: int = _RECENT_MSG_COUN
     if not path.is_file():
         return []
     messages = []
+    response_items = []
     try:
         with open(path, "rb") as f:
             for raw_line in f:
@@ -961,11 +1001,20 @@ def _extract_recent_messages(transcript_path: str, count: int = _RECENT_MSG_COUN
                             if isinstance(text, str) and text.strip():
                                 if not _is_harness_boilerplate(text):
                                     messages.append(text.strip()[:200])
+                    elif entry.get("type") == "response_item":
+                        payload = entry.get("payload")
+                        turn = (
+                            codex_response_message(payload) if isinstance(payload, dict) else None
+                        )
+                        if turn and turn[0] == "user" and not _is_harness_boilerplate(turn[1]):
+                            response_items.append(turn[1][:200])
                 except (json.JSONDecodeError, AttributeError):
                     pass
     except OSError:
         return []
-    return messages[-count:]
+    # Codex can record the same turn in both formats. Prefer the user events
+    # when present and use response items for rollouts containing only those.
+    return (messages or response_items)[-count:]
 
 
 _THEME_STOPWORDS = frozenset(
@@ -1242,6 +1291,17 @@ def _save_diary_direct(
         f"|msgs:{len(messages)}|recent:{topics}"
     )
 
+    writer = SHARED_HOOK_WRITER.get()
+    if writer is not None:
+        result = writer.diary(
+            agent_name=agent_name,
+            entry=entry,
+            topic="checkpoint",
+            wing=wing,
+            _checkpoint_key=f"{session_id}:{exchange_count}",
+        )
+        return _report_saved_diary(result, messages, themes, toast)
+
     try:
         if routing.use_daemon:
             from .daemon import DaemonWaitTimeout
@@ -1272,18 +1332,7 @@ def _save_diary_direct(
                 return {"drawers_filed": 0, "messages_folded": 0}
             result = job.get("result") or {}
             if job.get("state") == "succeeded" and result.get("success"):
-                _log(f"Diary checkpoint saved: {result.get('entry_id', '?')}")
-                try:
-                    ack_file = STATE_DIR / "last_checkpoint"
-                    ack_file.write_text(
-                        json.dumps({"msgs": len(messages), "ts": utc_now_iso()}),
-                        encoding="utf-8",
-                    )
-                except OSError:
-                    pass
-                if toast:
-                    _desktop_toast(f"Checkpoint saved - {len(messages)} messages archived")
-                return {"drawers_filed": 1, "messages_folded": len(messages), "themes": themes}
+                return _report_saved_diary(result, messages, themes, toast)
             if _job_deferred_by_lock(job):
                 # Queued behind the palace lock: the entry is held and the daemon
                 # files it once the holder exits. Not a failure, and not a reason
@@ -1321,6 +1370,20 @@ def _save_diary_direct(
     return {"drawers_filed": 0, "messages_folded": 0}
 
 
+def _report_saved_diary(result, messages, themes, toast):
+    _log(f"Diary checkpoint saved: {result.get('entry_id', '?')}")
+    try:
+        ack_file = STATE_DIR / "last_checkpoint"
+        ack_file.write_text(
+            json.dumps({"msgs": len(messages), "ts": utc_now_iso()}), encoding="utf-8"
+        )
+    except OSError:
+        pass
+    if toast:
+        _desktop_toast(f"Checkpoint saved - {len(messages)} messages archived")
+    return {"drawers_filed": 1, "messages_folded": len(messages), "themes": themes}
+
+
 def _ingest_transcript(transcript_path: str):
     """Mine a Claude Code session transcript into the palace as a conversation."""
     path = _validate_transcript_path(transcript_path)
@@ -1343,6 +1406,10 @@ def _ingest_transcript(transcript_path: str):
         return
 
     wing = _project_wing(str(path))
+    writer = SHARED_HOOK_WRITER.get()
+    if writer is not None:
+        writer.mine(source=str(path), mode="convos", wing=wing)
+        return
     try:
         if routing.use_daemon:
             try:
@@ -1391,6 +1458,9 @@ def _diary_agent_for_harness(harness: str) -> str:
     returning the harness name keeps a newly supported harness discoverable
     instead of silently invisible again.
     """
+    writer = SHARED_HOOK_WRITER.get()
+    if writer is not None and writer.source_harness in ("omp", "pi", "opencode", "grok"):
+        return writer.source_harness
     return "claude" if harness == "claude-code" else harness
 
 

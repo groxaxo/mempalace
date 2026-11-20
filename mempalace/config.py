@@ -407,6 +407,8 @@ def get_configured_collection_name() -> str:
     return MempalaceConfig().collection_name
 
 
+DEFAULT_EMBEDDING_MODEL = "nemotron-vllm"
+
 # Single source of truth for chunking defaults. ``mempalace.miner``
 # imports these so the legacy module-level ``CHUNK_SIZE`` /
 # ``CHUNK_OVERLAP`` / ``MIN_CHUNK_SIZE`` constants stay in sync with
@@ -1150,13 +1152,13 @@ class MempalaceConfig:
 
         Values: ``"minilm"`` (ChromaDB's all-MiniLM-L6-v2 — English-only),
         ``"embeddinggemma"`` (multilingual, 100+ languages),
-        ``"embeddinggemma2"`` (Google EmbeddingGemma 2), or
+        ``"embeddinggemma2"`` (Google EmbeddingGemma 2), ``"nemotron-vllm"``
+        (the fork's local Nemotron embedding service), or
         ``"openai-compat"`` (embeddings served by an OpenAI-compatible
         ``/v1/embeddings`` endpoint — see ``embedding_api_url`` /
         ``embedding_api_model`` / ``embedding_api_key``). Read from env
         ``MEMPALACE_EMBEDDING_MODEL`` first, then ``embedding_model`` in
-        ``config.json``, then ``"minilm"``, the model every older palace
-        was built with.
+        ``config.json``, then ``"nemotron-vllm"``.
 
         Switching models on an existing palace requires re-embedding
         (different vector space) — ChromaDB rejects reads when the persisted
@@ -1184,7 +1186,7 @@ class MempalaceConfig:
         env_val = os.environ.get("MEMPALACE_EMBEDDING_MODEL")
         if env_val:
             return env_val.strip().lower()
-        value = self._file_config.get("embedding_model", "minilm")
+        value = self._file_config.get("embedding_model", DEFAULT_EMBEDDING_MODEL)
         return None if value is None else str(value).strip().lower()
 
     @property
@@ -1381,7 +1383,7 @@ class MempalaceConfig:
         """Persist the embedding-model choice to ``config.json``.
 
         ``mempalace init --embedding-model`` calls this. Accepts ``"minilm"``,
-        ``"embeddinggemma"``, ``"embeddinggemma2"``, or ``"openai-compat"``;
+        ``"embeddinggemma"``, ``"embeddinggemma2"``, ``"nemotron-vllm"``, or ``"openai-compat"``;
         other values are normalized to lowercase and persisted
         (:attr:`embedding_model` then reads unrecognized values as minilm,
         with a warning, and refuses near misses of supported names).
@@ -1443,7 +1445,7 @@ class MempalaceConfig:
     def embedding_api_url(self):
         """Base URL of the OpenAI-compatible ``/v1/embeddings`` endpoint.
 
-        Used only when ``embedding_model == "openai-compat"``. Resolved from
+        Used with ``"openai-compat"`` and ``"nemotron-vllm"``. Resolved from
         env ``MEMPALACE_EMBEDDING_API_URL`` first, then ``embedding_api_url``
         in ``config.json``; ``None`` when unset. Accepts a bare host, a
         ``…/v1`` base, or a full endpoint URL.
@@ -1452,7 +1454,7 @@ class MempalaceConfig:
 
     @property
     def embedding_api_model(self):
-        """Server-side model id for the ``openai-compat`` embeddings endpoint.
+        """Server-side model id for an OpenAI-compatible embeddings endpoint.
 
         Resolved from env ``MEMPALACE_EMBEDDING_API_MODEL`` first, then
         ``embedding_api_model`` in ``config.json``; ``None`` when unset.
