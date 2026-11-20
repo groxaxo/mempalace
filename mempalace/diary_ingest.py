@@ -18,20 +18,29 @@ Usage:
 
 import hashlib
 import json
-import os
+import logging
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
+from . import paths
+from .config import MempalaceConfig
+from .fsio import decode_source, encoding_metadata
 from .miner import _extract_entities_for_metadata
 from .palace import (
+    StaleDrawerPurgeFailed,
     build_closet_lines,
     get_closets_collection,
     get_collection,
     mine_lock,
+    open_aaak_collection,
     purge_file_closets,
     upsert_closet_lines,
+    write_file_drawers,
 )
+from .source_identity import identity_metadata
+from .timeutil import utc_now_iso
+
+logger = logging.getLogger(__name__)
 
 DIARY_ENTRY_RE = re.compile(r"^## .+", re.MULTILINE)
 
@@ -43,7 +52,7 @@ def _state_file_for(palace_path: str, diary_dir: Path) -> Path:
     pointing at the same palace each get an independent state file. The
     state file is *never* written inside the user's diary directory.
     """
-    state_root = Path(os.path.expanduser("~")) / ".mempalace" / "state"
+    state_root = paths.state_path("state")
     state_root.mkdir(parents=True, exist_ok=True)
     key = hashlib.sha256(f"{palace_path}|{diary_dir}".encode()).hexdigest()[:24]
     return state_root / f"diary_ingest_{key}.json"
@@ -60,11 +69,21 @@ def _split_entries(text):
     return entries
 
 
-def _diary_drawer_id(wing: str, date_str: str) -> str:
-    """Stable, wing-scoped drawer ID. Two diaries (e.g. 'work' vs 'personal')
-    sharing the same date never collide."""
-    suffix = hashlib.sha256(f"{wing}|{date_str}".encode()).hexdigest()[:24]
-    return f"drawer_diary_{suffix}"
+def _diary_drawer_id_entry(wing: str, date_str: str, entry_idx: int, entry_chunk_idx: int) -> str:
+    """Per-entry, per-chunk drawer ID.
+
+    The ``v2_`` prefix distinguishes new IDs from the legacy file-level
+    scheme (one drawer per file). Legacy file-level drawers
+    are auto-purged on any ``ingest_diaries`` call that triggers a full
+    rebuild (``force=True`` or detected content change): the rebuild's
+    prune drops every drawer of the ``source_file`` it did not just write,
+    legacy and stale v2 alike, so the schema migration runs as a side
+    effect of normal use.
+    """
+    suffix = hashlib.sha256(
+        f"{wing}|{date_str}|{entry_idx}|{entry_chunk_idx}".encode()
+    ).hexdigest()[:24]
+    return f"drawer_diary_v2_{suffix}"
 
 
 def _diary_closet_id_base(wing: str, date_str: str) -> str:
@@ -106,12 +125,14 @@ def ingest_diaries(
 
     drawers_col = get_collection(palace_path)
     closets_col = get_closets_collection(palace_path)
+    aaak_col = open_aaak_collection(palace_path)
+    chunk_size = MempalaceConfig().chunk_size
 
     days_updated = 0
     closets_created = 0
 
     for diary_path in diary_files:
-        text = diary_path.read_text(encoding="utf-8", errors="replace")
+        text, source_encoding = decode_source(diary_path.read_bytes(), universal_newlines=True)
         if len(text.strip()) < 50:
             continue
 
@@ -120,22 +141,41 @@ def ingest_diaries(
             continue
         date_str = date_match.group(1)
 
-        # Skip if content hasn't changed
+        # Skip if content hasn't changed. Hash-based — size alone false-negatives
+        # on same-length edits (e.g. "teh" → "the"), silently dropping real edits.
         state_key = f"{wing}|{diary_path.name}"
-        prev_size = state.get(state_key, {}).get("size", 0)
+        prev_entry = state.get(state_key, {})
+        prev_hash = prev_entry.get("content_hash")
+        prev_size = prev_entry.get("size", 0)
         curr_size = len(text)
-        if curr_size == prev_size and not force:
-            continue
+        curr_hash = hashlib.sha256(text.encode("utf-8", "surrogateescape")).hexdigest()
+        if not force:
+            if prev_hash is not None:
+                if curr_hash == prev_hash:
+                    continue
+            elif curr_size == prev_size and prev_size > 0:
+                # Legacy state without content_hash: keep size-based skip but
+                # backfill the hash so future runs use the strict check.
+                state[state_key] = {**prev_entry, "content_hash": curr_hash}
+                continue
 
-        now_iso = datetime.now(timezone.utc).isoformat()
-        drawer_id = _diary_drawer_id(wing, date_str)
+        # An in-place edit (same entry count, different content) means existing
+        # closets are stale. Force a full rebuild whenever the hash changes,
+        # not only on entry-count growth.
+        content_changed = prev_hash is not None and curr_hash != prev_hash
+
+        now_iso = utc_now_iso()
         entities = _extract_entities_for_metadata(text)
         source_file = str(diary_path)
 
         # Serialize per source — two terminals running ingest at once must
         # not interleave the upsert + closet-rebuild.
         with mine_lock(source_file):
-            drawer_meta = {
+            entries = _split_entries(text)
+            prev_entry_count = state.get(state_key, {}).get("entry_count", 0)
+            full_rebuild = force or content_changed
+
+            base_meta = {
                 "date": date_str,
                 "wing": wing,
                 "room": "daily",
@@ -143,24 +183,67 @@ def ingest_diaries(
                 "source_session": "daily_diary",
                 "filed_at": now_iso,
             }
+            # Which directory this diary was read from, so ``sync`` decides an
+            # ingested drawer by the same reading as a mined one.
+            base_meta.update(identity_metadata(source_file))
+            base_meta.update(encoding_metadata(source_encoding))
             if entities:
-                drawer_meta["entities"] = entities
-            drawers_col.upsert(
-                documents=[text],
-                ids=[drawer_id],
-                metadatas=[drawer_meta],
-            )
+                base_meta["entities"] = entities
 
-            entries = _split_entries(text)
-            prev_entry_count = state.get(state_key, {}).get("entry_count", 0)
-            new_entries = entries if force else entries[prev_entry_count:]
+            # Per-entry drawers, with character chunking inside any entry
+            # whose serialized text exceeds chunk_size. ``chunk_index`` is
+            # a global counter across the file so the searcher's closet
+            # enrichment (which orders a source's chunks by chunk_index) can
+            # show sibling chunks as context regardless of entry boundary. ``entry_index`` and
+            # ``entry_chunk_index`` are preserved for entry-grouping
+            # consumers.
+            drawers = []
+            for entry_idx, (header, body) in enumerate(entries):
+                entry_text = f"{header}\n{body}" if body else header
+                for entry_chunk_idx, start in enumerate(range(0, len(entry_text), chunk_size)):
+                    meta = {
+                        **base_meta,
+                        "chunk_index": len(drawers),
+                        "entry_index": entry_idx,
+                        "entry_chunk_index": entry_chunk_idx,
+                        "entry_header_preview": header[:120],
+                    }
+                    drawer_id = _diary_drawer_id_entry(wing, date_str, entry_idx, entry_chunk_idx)
+                    drawers.append((drawer_id, entry_text[start : start + chunk_size], meta))
 
+            # A full rebuild writes the new drawers, then drops the file's
+            # others: legacy file-level drawers, trailing entries the file no
+            # longer has, and their AAAK summaries. A diary is preserved
+            # memory, so every entry text the rebuild overwrites or drops is
+            # journaled first, and drawers other producers filed for the same
+            # path stay. A failed prune or journal append leaves the state
+            # untouched, so the next ingest rebuilds the file again.
+            try:
+                write_file_drawers(
+                    drawers_col,
+                    source_file,
+                    drawers,
+                    prune=full_rebuild,
+                    aaak_col=aaak_col,
+                    owner="diary",
+                    palace_path=palace_path,
+                )
+            except StaleDrawerPurgeFailed as exc:
+                logger.warning("%s", exc)
+                continue
+
+            new_entries = entries if full_rebuild else entries[prev_entry_count:]
             if new_entries:
                 all_lines = []
-                for header, body in new_entries:
-                    entry_text = f"{header}\n{body}"
+                for offset, (header, body) in enumerate(new_entries):
+                    entry_idx = offset if full_rebuild else prev_entry_count + offset
+                    entry_text = f"{header}\n{body}" if body else header
+                    # Closet references the canonical (entry_chunk_idx=0)
+                    # drawer for the entry. Search enrichment finds sibling
+                    # chunks via the (source_file, chunk_index) pair.
+                    entry_drawer_id = _diary_drawer_id_entry(wing, date_str, entry_idx, 0)
                     entry_lines = build_closet_lines(
-                        source_file, [drawer_id], entry_text, wing, "daily"
+                        source_file, [entry_drawer_id], entry_text, wing, "daily"
                     )
                     all_lines.extend(entry_lines)
 
@@ -175,15 +258,16 @@ def ingest_diaries(
                     }
                     if entities:
                         closet_meta["entities"] = entities
-                    # On a force rebuild, wipe any leftover numbered closets
-                    # from a longer prior run before re-writing.
-                    if force:
+                    # On any full rebuild (force or detected content edit),
+                    # wipe leftover closets from a prior run before re-writing.
+                    if full_rebuild:
                         purge_file_closets(closets_col, source_file)
                     n = upsert_closet_lines(closets_col, closet_id_base, all_lines, closet_meta)
                     closets_created += n
 
             state[state_key] = {
                 "size": curr_size,
+                "content_hash": curr_hash,
                 "entry_count": len(entries),
                 "ingested_at": now_iso,
             }
@@ -201,7 +285,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Ingest daily summaries into the palace")
     parser.add_argument("--dir", required=True, help="Path to daily_summaries directory")
-    parser.add_argument("--palace", default=os.path.expanduser("~/.mempalace/palace"))
+    parser.add_argument("--palace", default=paths.default_palace_path())
     parser.add_argument("--wing", default="diary")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()

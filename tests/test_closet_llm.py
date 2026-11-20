@@ -7,34 +7,40 @@ These tests don't hit the network. They mock urllib to verify:
 - response parsing handles the standard chat-completions payload
 """
 
+import io
 import json
+import os
+import subprocess
+import sys
 import tempfile
 from unittest.mock import patch
 
+import pytest
+
 from mempalace.closet_llm import (
+    MAX_OUTPUT_TOKENS,
     LLMConfig,
     _call_llm,
     _parsed_to_closet_lines,
     regenerate_closets,
 )
 
-
 # ── LLMConfig ─────────────────────────────────────────────────────────────
 
 
 class TestLLMConfig:
     def test_reads_env_vars(self, monkeypatch):
-        monkeypatch.setenv("LLM_ENDPOINT", "http://localhost:11434/v1")
-        monkeypatch.setenv("LLM_KEY", "sk-abc")
-        monkeypatch.setenv("LLM_MODEL", "llama3:8b")
+        monkeypatch.setenv("MEMPALACE_LLM_ENDPOINT", "http://localhost:11434/v1")
+        monkeypatch.setenv("MEMPALACE_LLM_KEY", "sk-abc")
+        monkeypatch.setenv("MEMPALACE_LLM_MODEL", "llama3:8b")
         c = LLMConfig()
         assert c.endpoint == "http://localhost:11434/v1"
         assert c.key == "sk-abc"
         assert c.model == "llama3:8b"
 
     def test_cli_flags_override_env(self, monkeypatch):
-        monkeypatch.setenv("LLM_ENDPOINT", "http://env-endpoint/v1")
-        monkeypatch.setenv("LLM_MODEL", "env-model")
+        monkeypatch.setenv("MEMPALACE_LLM_ENDPOINT", "http://env-endpoint/v1")
+        monkeypatch.setenv("MEMPALACE_LLM_MODEL", "env-model")
         c = LLMConfig(endpoint="http://flag-endpoint/v1", model="flag-model")
         assert c.endpoint == "http://flag-endpoint/v1"
         assert c.model == "flag-model"
@@ -44,19 +50,22 @@ class TestLLMConfig:
         assert c.endpoint == "http://foo/v1"
 
     def test_missing_reports_required(self, monkeypatch):
-        monkeypatch.delenv("LLM_ENDPOINT", raising=False)
-        monkeypatch.delenv("LLM_KEY", raising=False)
-        monkeypatch.delenv("LLM_MODEL", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_ENDPOINT", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_KEY", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_MODEL", raising=False)
+        monkeypatch.setenv("LLM_ENDPOINT", "https://api.openai.com/v1")
+        monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
         c = LLMConfig()
         missing = c.missing()
         assert any("ENDPOINT" in m for m in missing)
         assert any("MODEL" in m for m in missing)
         # key is optional
         assert not any("KEY" in m for m in missing)
+        assert c.endpoint == ""
 
     def test_key_is_optional(self, monkeypatch):
-        monkeypatch.delenv("LLM_KEY", raising=False)
-        c = LLMConfig(endpoint="http://local/v1", model="m")
+        monkeypatch.delenv("MEMPALACE_LLM_KEY", raising=False)
+        c = LLMConfig(endpoint="http://127.0.0.1:11434/v1", model="m")
         assert c.missing() == []
 
     def test_rejects_non_http_scheme(self):
@@ -71,6 +80,12 @@ class TestLLMConfig:
         with pytest.raises(ValueError, match="http"):
             LLMConfig(endpoint="ftp://evil.example.com/v1", model="m")
 
+    def test_rejects_http_url_without_host(self):
+        import pytest
+
+        with pytest.raises(ValueError, match="host"):
+            LLMConfig(endpoint="http:///v1", model="m")
+
     def test_rejects_userinfo_in_url(self):
         import pytest
 
@@ -82,7 +97,7 @@ class TestLLMConfig:
         assert c.endpoint == "https://api.example.com/v1"
 
     def test_empty_endpoint_is_allowed(self, monkeypatch):
-        monkeypatch.delenv("LLM_ENDPOINT", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_ENDPOINT", raising=False)
         c = LLMConfig()
         assert c.endpoint == ""
 
@@ -166,7 +181,7 @@ class TestCallLLM:
                 }
             )
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
             parsed, usage = _call_llm(cfg, "/tmp/test.md", "w", "r", "content body")
 
         assert parsed["topics"] == ["postgres"]
@@ -191,7 +206,7 @@ class TestCallLLM:
                 }
             )
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
             _call_llm(cfg, "/tmp/x", "w", "r", "c")
 
         assert "authorization" not in captured_headers
@@ -208,9 +223,77 @@ class TestCallLLM:
                 }
             )
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
             parsed, _ = _call_llm(cfg, "/tmp/x", "w", "r", "c")
         assert parsed == {"topics": ["t1"], "quotes": [], "summary": ""}
+
+    def test_a_reply_of_the_wrong_shape_is_retried_then_dropped(self):
+        """An object without ``topics`` (a quoted code snippet, say) must never
+        replace the regex closets: it counts as a failed parse."""
+        cfg = self._make_cfg()
+        calls = []
+
+        def fake_urlopen(req, timeout=None):
+            calls.append(req)
+            return _FakeResp({"choices": [{"message": {"content": '{"debug": true}'}}]})
+
+        with (
+            patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen),
+            patch("mempalace.closet_llm.time.sleep"),
+        ):
+            assert _call_llm(cfg, "/tmp/x", "w", "r", "c") == (None, None)
+        assert len(calls) == 3
+
+    def test_a_400_is_not_retried_even_when_its_body_mentions_generate(self):
+        from urllib.error import HTTPError
+
+        cfg = self._make_cfg()
+        calls = []
+
+        def fake_urlopen(req, timeout=None):
+            calls.append(req)
+            raise HTTPError(req.full_url, 400, "Bad Request", {}, io.BytesIO(b"cannot generate"))
+
+        with (
+            patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen),
+            patch("mempalace.closet_llm.time.sleep"),
+        ):
+            assert _call_llm(cfg, "/tmp/x", "w", "r", "c") == (None, None)
+        assert len(calls) == 1
+
+    def test_switches_to_max_completion_tokens_when_a_400_asks_and_keeps_it(self):
+        from urllib.error import HTTPError
+
+        cfg = self._make_cfg()
+        bodies = []
+
+        def fake_urlopen(req, timeout=None):
+            body = json.loads(req.data)
+            bodies.append(body)
+            if "max_tokens" in body:
+                raise HTTPError(
+                    req.full_url,
+                    400,
+                    "Bad Request",
+                    {},
+                    io.BytesIO(b"Use 'max_completion_tokens' instead."),
+                )
+            return _FakeResp(
+                {
+                    "choices": [{"message": {"content": '{"topics":[],"quotes":[],"summary":""}'}}],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+                }
+            )
+
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
+            parsed, _ = _call_llm(cfg, "/tmp/x", "w", "r", "c")
+            assert parsed is not None
+            assert len(bodies) == 2 and "max_tokens" not in bodies[1]
+            # It also counts reasoning tokens, so the visible-output cap is too small.
+            assert bodies[1]["max_completion_tokens"] > MAX_OUTPUT_TOKENS
+            # The next file in the run skips the request that is known to fail.
+            assert _call_llm(cfg, "/tmp/y", "w", "r", "c")[0] is not None
+        assert len(bodies) == 3 and "max_tokens" not in bodies[2]
 
     def test_returns_none_on_invalid_json(self):
         cfg = self._make_cfg()
@@ -223,9 +306,33 @@ class TestCallLLM:
                 }
             )
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
-            parsed, usage = _call_llm(cfg, "/tmp/x", "w", "r", "c")
+        with (
+            patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen),
+            patch("mempalace.closet_llm.time.sleep"),
+        ):
+            parsed, _ = _call_llm(cfg, "/tmp/x", "w", "r", "c")
         assert parsed is None
+
+    def test_retries_on_json_decode_error(self):
+        cfg = self._make_cfg()
+        call_count = {"n": 0}
+
+        def fake_urlopen(req, timeout=None):
+            call_count["n"] += 1
+            return _FakeResp(
+                {
+                    "choices": [{"message": {"content": "not json at all"}}],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+                }
+            )
+
+        with (
+            patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen),
+            patch("mempalace.closet_llm.time.sleep"),
+        ):
+            parsed, _ = _call_llm(cfg, "/tmp/x", "w", "r", "c")
+        assert parsed is None
+        assert call_count["n"] == 3
 
 
 # ── regenerate_closets error paths ───────────────────────────────────────
@@ -233,12 +340,79 @@ class TestCallLLM:
 
 class TestRegenerateClosets:
     def test_missing_config_returns_error(self, monkeypatch):
-        monkeypatch.delenv("LLM_ENDPOINT", raising=False)
-        monkeypatch.delenv("LLM_MODEL", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_ENDPOINT", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_MODEL", raising=False)
         with tempfile.TemporaryDirectory() as palace:
             result = regenerate_closets(palace)
             assert result["error"] == "missing-config"
             assert any("ENDPOINT" in m for m in result["missing"])
+
+    def test_regen_refuses_before_open_or_llm_when_palace_has_writer(self, tmp_path, monkeypatch):
+        """The non-dry-run operation must contend for process-lifetime palace
+        ownership before it opens sqlite_exact or performs expensive/external
+        work."""
+        from mempalace import closet_llm as closet_llm_mod
+        from mempalace.palace import MineAlreadyRunning
+
+        palace = str(tmp_path / "palace")
+        os.makedirs(palace)
+        monkeypatch.setenv("HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("MEMPALACE_BACKEND_EXPLICIT", "sqlite_exact")
+        holder_code = """
+import sys
+from mempalace.palace import mine_palace_lock
+with mine_palace_lock(sys.argv[1]):
+    print("ready", flush=True)
+    sys.stdin.read()
+"""
+        holder = subprocess.Popen(
+            [sys.executable, "-c", holder_code, palace],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=os.environ.copy(),
+        )
+        try:
+            assert holder.stdout is not None
+            assert holder.stdout.readline().strip() == "ready"
+            cfg = LLMConfig(endpoint="http://127.0.0.1:11434/v1", model="m")
+            with (
+                patch.object(
+                    closet_llm_mod,
+                    "get_collection",
+                    side_effect=AssertionError("collection opened before ownership"),
+                ),
+                patch.object(
+                    closet_llm_mod,
+                    "get_closets_collection",
+                    side_effect=AssertionError("closets opened before ownership"),
+                ),
+                patch.object(
+                    closet_llm_mod,
+                    "_call_llm",
+                    side_effect=AssertionError("LLM called before ownership"),
+                ),
+                patch.object(
+                    closet_llm_mod,
+                    "purge_file_closets",
+                    side_effect=AssertionError("delete reached before ownership"),
+                ),
+                patch.object(
+                    closet_llm_mod,
+                    "upsert_closet_lines",
+                    side_effect=AssertionError("upsert reached before ownership"),
+                ),
+            ):
+                with pytest.raises(MineAlreadyRunning):
+                    regenerate_closets(palace, cfg=cfg)
+        finally:
+            if holder.stdin is not None:
+                holder.stdin.close()
+            holder.wait(timeout=10)
+            if holder.returncode != 0:
+                stderr = holder.stderr.read() if holder.stderr is not None else ""
+                pytest.fail(f"lock holder failed with {holder.returncode}: {stderr}")
 
     def test_regen_purges_regex_closets_and_stamps_normalize_version(self, tmp_path):
         """Regression: before the hardening, regex closets for the same
@@ -283,7 +457,7 @@ class TestRegenerateClosets:
             },
         )
 
-        cfg = LLMConfig(endpoint="http://local/v1", model="llama3:8b")
+        cfg = LLMConfig(endpoint="http://127.0.0.1:11434/v1", model="llama3:8b")
 
         def fake_urlopen(req, timeout=None):
             return _FakeResp(
@@ -305,7 +479,7 @@ class TestRegenerateClosets:
                 }
             )
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
             result = regenerate_closets(palace, cfg=cfg)
 
         assert result["processed"] == 1 and result["failed"] == 0
@@ -315,19 +489,195 @@ class TestRegenerateClosets:
         survivors = closets.get(where={"source_file": source}, include=["documents", "metadatas"])
         assert survivors["ids"], "LLM closets should have been written"
         joined = "\n".join(survivors["documents"])
-        assert (
-            "STALE_REGEX_TOPIC" not in joined
-        ), "pre-existing regex closet was not purged before LLM write"
+        assert "STALE_REGEX_TOPIC" not in joined, (
+            "pre-existing regex closet was not purged before LLM write"
+        )
         assert "jwt auth" in joined
         for meta in survivors["metadatas"]:
             assert meta.get("generated_by", "").startswith("llm:")
             assert meta.get("normalize_version") == NORMALIZE_VERSION
 
+    def test_regen_paginates_drawer_fetch(self, tmp_path):
+        """Regression for #1073: drawers_col.get must be paginated at
+        batch_size=5000. A single get(limit=total, ...) on a palace with
+        more than SQLite's SQLITE_MAX_VARIABLE_NUMBER (32766) drawers
+        blows up inside chromadb. Matches the miner.status pattern
+        introduced in #851 (see #802, #850, #1073)."""
+        from mempalace import closet_llm as closet_llm_mod
+
+        palace = str(tmp_path / "palace")
+
+        # Build a fake collection: 12_000 drawers across 3 source files,
+        # enough to force 3 batches of batch_size=5000 (5000 + 5000 + 2000).
+        n_drawers = 12_000
+        ids = [f"d{i:05d}" for i in range(n_drawers)]
+        docs = [f"doc body {i}" for i in range(n_drawers)]
+        metas = [
+            {
+                "wing": "w",
+                "room": "r",
+                "source_file": f"/src/file_{i % 3}.md",
+                "entities": "",
+            }
+            for i in range(n_drawers)
+        ]
+
+        get_calls: list = []
+
+        class FakeDrawersCol:
+            def count(self):
+                return n_drawers
+
+            def get(self, limit=None, offset=0, include=None, **kwargs):
+                get_calls.append({"limit": limit, "offset": offset, "include": include})
+                end = min(offset + (limit or n_drawers), n_drawers)
+                return {
+                    "ids": ids[offset:end],
+                    "documents": docs[offset:end],
+                    "metadatas": metas[offset:end],
+                }
+
+        class FakeClosetsCol:
+            """Accept the purge + upsert calls the success path makes."""
+
+            def get(self, *a, **kw):
+                return {"ids": [], "documents": [], "metadatas": []}
+
+            def delete(self, *a, **kw):
+                return None
+
+            def upsert(self, *a, **kw):
+                return None
+
+        fake_drawers = FakeDrawersCol()
+        fake_closets = FakeClosetsCol()
+
+        def fake_urlopen(req, timeout=None):
+            return _FakeResp(
+                {
+                    "choices": [
+                        {"message": {"content": '{"topics":["t1"],"quotes":[],"summary":""}'}}
+                    ],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+                }
+            )
+
+        cfg = LLMConfig(endpoint="http://127.0.0.1:11434/v1", model="m")
+
+        with (
+            patch.object(closet_llm_mod, "get_collection", return_value=fake_drawers),
+            patch.object(closet_llm_mod, "get_closets_collection", return_value=fake_closets),
+            patch.object(closet_llm_mod, "purge_file_closets", return_value=None),
+            patch.object(closet_llm_mod, "upsert_closet_lines", return_value=None),
+            patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen),
+        ):
+            result = regenerate_closets(palace, cfg=cfg, dry_run=True)
+
+        # Three paginated calls: (limit=5000, offset=0), (5000, 5000), (5000, 10000).
+        assert len(get_calls) == 3, f"expected 3 batched fetches, got {len(get_calls)}"
+        for call in get_calls:
+            assert call["limit"] == 5000, (
+                f"batch must be 5000 — got {call['limit']} (would risk SQLITE_MAX_VARIABLE_NUMBER)"
+            )
+            # include must still request both documents and metadatas
+            assert "documents" in call["include"]
+            assert "metadatas" in call["include"]
+        assert [c["offset"] for c in get_calls] == [0, 5000, 10_000]
+
+        # by_source aggregation must be preserved exactly across batches:
+        # 12_000 drawers, 3 source files → 4_000 drawers each.
+        # dry_run=True short-circuits LLM calls but still walks by_source.
+        assert result.get("processed", 0) == 0  # dry_run
+        # Verify no single call tried to pull more than batch_size.
+        assert max(c["limit"] for c in get_calls) <= 5000
+
+    def test_regen_by_source_aggregates_across_batches(self, tmp_path):
+        """Pagination must not change the by_source grouping — drawers for
+        the same source_file split across batches still land in one group."""
+        from mempalace import closet_llm as closet_llm_mod
+
+        palace = str(tmp_path / "palace")
+
+        # 7_500 drawers, alternating between two source files → forces
+        # splits across the 5000/2500 boundary. Each source ends up with
+        # 3_750 drawers after regrouping.
+        n_drawers = 7_500
+        ids = [f"d{i:05d}" for i in range(n_drawers)]
+        docs = [f"body-{i}" for i in range(n_drawers)]
+        metas = [
+            {
+                "wing": "w",
+                "room": "r",
+                "source_file": f"/src/file_{i % 2}.md",
+                "entities": "",
+            }
+            for i in range(n_drawers)
+        ]
+
+        captured_sources: dict = {}
+
+        class FakeDrawersCol:
+            def count(self):
+                return n_drawers
+
+            def get(self, limit=None, offset=0, include=None, **kwargs):
+                end = min(offset + (limit or n_drawers), n_drawers)
+                return {
+                    "ids": ids[offset:end],
+                    "documents": docs[offset:end],
+                    "metadatas": metas[offset:end],
+                }
+
+        class FakeClosetsCol:
+            def get(self, *a, **kw):
+                return {"ids": [], "documents": [], "metadatas": []}
+
+            def delete(self, *a, **kw):
+                return None
+
+            def upsert(self, *a, **kw):
+                return None
+
+        # Hook _call_llm to inspect what regenerate_closets aggregated
+        # per source before the HTTP boundary.
+        real_call_llm = closet_llm_mod._call_llm
+
+        def spying_call_llm(cfg, source_file, wing, room, content):
+            captured_sources[source_file] = content
+            return (
+                {"topics": ["t"], "quotes": [], "summary": ""},
+                {"prompt_tokens": 1, "completion_tokens": 1},
+            )
+
+        cfg = LLMConfig(endpoint="http://127.0.0.1:11434/v1", model="m")
+
+        with (
+            patch.object(closet_llm_mod, "get_collection", return_value=FakeDrawersCol()),
+            patch.object(closet_llm_mod, "get_closets_collection", return_value=FakeClosetsCol()),
+            patch.object(closet_llm_mod, "purge_file_closets", return_value=None),
+            patch.object(closet_llm_mod, "upsert_closet_lines", return_value=None),
+            patch.object(closet_llm_mod, "_call_llm", side_effect=spying_call_llm),
+        ):
+            regenerate_closets(palace, cfg=cfg)
+
+        # Both sources survived the pagination boundary.
+        assert set(captured_sources.keys()) == {"/src/file_0.md", "/src/file_1.md"}
+        # Each source accumulated exactly 3_750 drawer bodies, concatenated
+        # with the "\n\n" separator the regenerate path uses.
+        for source, content in captured_sources.items():
+            assert content.count("\n\n") == 3_749, (
+                f"{source}: expected 3_750 chunks joined (3_749 separators), "
+                f"got {content.count(chr(10) + chr(10)) + 1}"
+            )
+
+        # Silence unused-var lint.
+        assert real_call_llm is not None
+
     def test_regen_uses_basename_not_split_slash(self, tmp_path, monkeypatch):
         """Regression: the old closet_id base used ``source.split('/')[-1]``
         which silently degrades on Windows paths (``C:\\proj\\a.md`` →
         the whole string). ``os.path.basename`` handles both separators."""
-        from mempalace.palace import get_collection, get_closets_collection
+        from mempalace.palace import get_closets_collection, get_collection
 
         palace = str(tmp_path / "palace")
         # Use a path whose basename differs between '/' split and
@@ -341,7 +691,7 @@ class TestRegenerateClosets:
             metadatas=[{"wing": "w", "room": "r", "source_file": source, "entities": ""}],
         )
 
-        cfg = LLMConfig(endpoint="http://local/v1", model="m")
+        cfg = LLMConfig(endpoint="http://127.0.0.1:11434/v1", model="m")
 
         def fake_urlopen(req, timeout=None):
             return _FakeResp(
@@ -353,7 +703,7 @@ class TestRegenerateClosets:
                 }
             )
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
             regenerate_closets(palace, cfg=cfg)
 
         closets = get_closets_collection(palace)
@@ -364,3 +714,73 @@ class TestRegenerateClosets:
         for cid in ids:
             assert "/" not in cid
             assert "mydoc.md" in cid
+
+
+class TestNoSilentExternal:
+    def test_generic_env_endpoint_is_not_contacted(self, monkeypatch):
+        monkeypatch.setenv("LLM_ENDPOINT", "https://api.openai.com/v1")
+        monkeypatch.setenv("LLM_KEY", "sk-stray")
+        monkeypatch.setenv("LLM_MODEL", "gpt-4o-mini")
+        monkeypatch.delenv("MEMPALACE_LLM_ENDPOINT", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_MODEL", raising=False)
+
+        def boom(*_args, **_kwargs):
+            raise AssertionError("contacted a generic LLM_ENDPOINT")
+
+        cfg = LLMConfig()
+        with patch("mempalace.llm_client.urlopen", side_effect=boom):
+            parsed, usage = _call_llm(cfg, "notes.md", "w", "r", "drawer text")
+        assert parsed is None and usage is None
+        assert cfg.missing()
+
+    def test_generic_env_names_are_reported_as_renamed(self, monkeypatch, capsys):
+        monkeypatch.setenv("LLM_ENDPOINT", "http://localhost:11434/v1")
+        monkeypatch.setenv("LLM_MODEL", "llama3:8b")
+        monkeypatch.delenv("LLM_KEY", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_ENDPOINT", raising=False)
+        monkeypatch.delenv("MEMPALACE_LLM_MODEL", raising=False)
+
+        result = regenerate_closets("/tmp/does-not-matter", cfg=LLMConfig())
+
+        assert result["error"] == "missing-config"
+        out = capsys.readouterr().out
+        assert "Found LLM_ENDPOINT, LLM_MODEL" in out
+        assert "MEMPALACE_LLM_ENDPOINT, MEMPALACE_LLM_MODEL" in out
+
+    def test_non_local_endpoint_is_not_contacted_without_consent(self, monkeypatch):
+        monkeypatch.delenv("MEMPALACE_ACCEPT_EXTERNAL_LLM", raising=False)
+        cfg = LLMConfig(endpoint="https://api.openai.com/v1", model="gpt-4o-mini", key="sk-test")
+
+        def boom(*_args, **_kwargs):
+            raise AssertionError("contacted a non-local endpoint")
+
+        with patch("mempalace.llm_client.urlopen", side_effect=boom):
+            parsed, _usage = _call_llm(cfg, "notes.md", "w", "r", "secret drawer text")
+            result = regenerate_closets("/tmp/does-not-matter", cfg=cfg)
+        assert parsed is None
+        assert result["error"] == "external-endpoint"
+
+    def test_non_local_endpoint_is_contacted_when_explicitly_accepted(self):
+        cfg = LLMConfig(
+            endpoint="https://api.openai.com/v1",
+            model="gpt-4o-mini",
+            key="sk-test",
+            accept_external=True,
+        )
+        called = {}
+
+        def fake_urlopen(req, timeout=None):
+            called["url"] = req.full_url
+            return _FakeResp(
+                {
+                    "choices": [
+                        {"message": {"content": '{"topics":["t"],"quotes":[],"summary":""}'}}
+                    ],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+                }
+            )
+
+        with patch("mempalace.llm_client.urlopen", side_effect=fake_urlopen):
+            parsed, _usage = _call_llm(cfg, "notes.md", "w", "r", "drawer text")
+        assert called["url"] == "https://api.openai.com/v1/chat/completions"
+        assert parsed["topics"] == ["t"]
