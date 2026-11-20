@@ -325,7 +325,9 @@ def main():
     )
     p_search.add_argument("--wing", default=None, help="Limit to one project")
     p_search.add_argument("--room", default=None, help="Limit to one room")
-    p_search.add_argument("--results", type=int, default=5, help="Number of results")
+    p_search.add_argument(
+        "--results", type=int, default=5, help="Result limit (at most 5 with Nemotron)"
+    )
     p_search.add_argument(
         "--include-media",
         action="store_true",

@@ -55,6 +55,11 @@ served alias `nemotron-embed`. Use `MEMPALACE_EMBEDDING_API_URL` and
 installation. The fork uses `passage: ` for stored text and `query: ` for
 search, validates the served model, and records its 2,048-vector identity.
 
+Nemotron searches in the CLI, MCP and Python API rank drawers by vector
+similarity and return at most five results. Filters and smaller requested
+limits still apply. The [repository retrieval benchmark](benchmarks/2026-11-21-mempalace-nemotron-vs-bm25.md)
+reports 35/36 top-five hits for Nemotron and 30/36 for BM25 across three repositories.
+
 For an existing MiniLM palace, set `MEMPALACE_EMBEDDING_MODEL=minilm` or
 set `embedding_model` to `minilm` in `config.json` before opening it. Changing
 the model of an existing palace requires rebuilding its index.

@@ -105,7 +105,18 @@ def _print_also_in(hit: dict) -> None:
 
 
 def _cli_ranked_hits(
-    col, query, *, fetch, n_results, where, wing, room, window, metric, stop_words
+    col,
+    query,
+    *,
+    fetch,
+    n_results,
+    where,
+    wing,
+    room,
+    window,
+    metric,
+    stop_words,
+    vector_only=False,
 ):
     """``(hits, fetched, skipped)``: the top ``fetch`` drawers, re-ranked and
     folded, and how many bookkeeping rows the fetch held.
@@ -164,15 +175,18 @@ def _cli_ranked_hits(
     ]
     # Bookkeeping rows held slots in the fetch, so the caller widens for them too.
     skipped = len(docs) - len(hits)
-    vector_weight, bm25_weight = _resolve_hybrid_rank_weights()
-    hits = _hybrid_rank(
-        hits,
-        query,
-        vector_weight=vector_weight,
-        bm25_weight=bm25_weight,
-        metric=metric,
-        stop_words=stop_words,
-    )
+    if vector_only:
+        hits.sort(key=lambda hit: hit["distance"])
+    else:
+        vector_weight, bm25_weight = _resolve_hybrid_rank_weights()
+        hits = _hybrid_rank(
+            hits,
+            query,
+            vector_weight=vector_weight,
+            bm25_weight=bm25_weight,
+            metric=metric,
+            stop_words=stop_words,
+        )
     return _fold_copies_across_sources(hits, _cli_hit_source, _cli_hit_ref), fetched, skipped
 
 
@@ -229,6 +243,7 @@ def search(
         if not result["results"]:
             print("No results found.")
         return None
+    vector_only, n_results = _nemotron_search_settings(n_results)
     # Resolved before the fence below: both exits from this function rank by
     # BM25, so the filter has to be in hand on either branch.
     stop_words = _resolve_stop_words(None)
@@ -260,6 +275,10 @@ def search(
             backend_name = None
 
         if backend_name == "chroma" and _hnsw_capacity_diverged(palace_path):
+            if vector_only:
+                message = "Nemotron search requires a working vector index. Run `mempalace repair`."
+                print(f"\n  {message}")
+                raise SearchError(message)
             return _print_search_results_bm25_only(
                 query,
                 palace_path,
@@ -297,6 +316,7 @@ def search(
             window=(since_dt, before_dt) if date_window_active else None,
             metric=metric,
             stop_words=stop_words,
+            vector_only=vector_only,
         )
         # Folded copies or skipped bookkeeping rows can leave the page short
         # while the fetch came back full, so more candidates exist: widen, as
@@ -337,7 +357,8 @@ def search(
         print(f"  [{i}] {wing_name} / {room_name}")
         print(f"      Source: {source}")
         _print_also_in(hit)
-        print(f"      Match:  {metric}_sim={vec_sim}  bm25={bm25}")
+        lexical_score = "" if vector_only else f"  bm25={bm25}"
+        print(f"      Match:  {metric}_sim={vec_sim}{lexical_score}")
         print()
         # Print the verbatim text, indented
         for line in hit["text"].strip().split("\n"):

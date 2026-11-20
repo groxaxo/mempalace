@@ -310,7 +310,7 @@ TOOLS = {
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Max results (default 5)",
+                    "description": "Max results (default 5, capped at 5 with Nemotron)",
                     "minimum": 1,
                     "maximum": 100,
                 },

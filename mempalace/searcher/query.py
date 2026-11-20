@@ -320,7 +320,7 @@ def search_memories(
             widened via ``_candidate_pool_size`` — see
             ``date_filter_pool_truncated`` in the response.
         before: Optional exclusive ISO upper bound; see ``since``.
-        n_results: Max results to return.
+        n_results: Max results to return. Nemotron vector searches cap this at five.
         max_distance: Optional cutoff on the cosine scale — 0 = identical,
             2 = opposite — whatever metric the collection declares (``l2`` and
             ``ip`` distances are converted before comparing). Candidates past
@@ -358,6 +358,11 @@ def search_memories(
     # regardless of whether the call routes through the vector path or
     # the BM25-only fallback below.
     _validate_candidate_strategy(candidate_strategy)
+    vector_only, n_results = _nemotron_search_settings(
+        n_results, lexical_only=(candidate_strategy == "lexical")
+    )
+    if vector_only:
+        candidate_strategy = "vector"
 
     if include_media or query_task != "search":
         if candidate_strategy == "lexical":
@@ -402,6 +407,7 @@ def search_memories(
         collection_name=collection_name,
         source_file=source_file,
         stop_words=stop_words,
+        vector_only=vector_only,
     )
     if short_circuit is not None:
         return short_circuit
@@ -464,14 +470,15 @@ def search_memories(
 
     # Gather closet hits (best-per-source) to build a boost lookup.
     closet_boost_by_source: dict = {}  # source_file -> (rank, closet_dist, preview)
-    try:
-        closets_col = get_closets_collection(palace_path, create=False, read_only=True)
-        closet_boost_by_source = _closet_boosts(
-            closets_col, query=query, n_results=n_results, where=where
-        )
-    except Exception:
-        # No closets yet — hybrid degrades to pure drawer search.
-        logger.debug("Closet collection unavailable; using drawer-only search", exc_info=True)
+    if not vector_only:
+        try:
+            closets_col = get_closets_collection(palace_path, create=False, read_only=True)
+            closet_boost_by_source = _closet_boosts(
+                closets_col, query=query, n_results=n_results, where=where
+            )
+        except Exception:
+            # No closets yet — hybrid degrades to pure drawer search.
+            logger.debug("Closet collection unavailable; using drawer-only search", exc_info=True)
 
     # Rank-based boost. The ordinal signal ("which closet matched best") is
     # more reliable than absolute distance on narrative content, where
@@ -553,7 +560,8 @@ def search_memories(
     scored.sort(key=lambda h: h["_sort_key"])
     hits = scored[:pre_enrichment_limit]
 
-    hits = _enrich_closet_hits(hits, drawers_col)
+    if not vector_only:
+        hits = _enrich_closet_hits(hits, drawers_col)
 
     # Candidate strategy hook: optionally widen the rerank pool's *source*
     # before ranking. Default ("vector") is a no-op; "union" merges top-K
@@ -577,6 +585,7 @@ def search_memories(
         before_dt=before_dt,
         stats=stats,
         known_distances=measured,
+        vector_only=vector_only,
     )
     if strategy_error:
         return strategy_error

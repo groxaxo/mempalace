@@ -3,6 +3,27 @@ if __name__ != "mempalace.searcher":
     raise ImportError(f"{__name__} is an implementation fragment; import mempalace.searcher")
 
 
+_NEMOTRON_SEARCH_LIMIT = 5
+
+
+def _nemotron_search_settings(n_results: int, *, lexical_only: bool = False) -> tuple[bool, int]:
+    from ..embedding import _NEMOTRON_VLLM_ALIAS, UnknownEmbeddingModelError
+
+    if lexical_only:
+        return False, n_results
+    cfg = MempalaceConfig()
+    try:
+        model = cfg.embedding_model
+    except UnknownEmbeddingModelError:
+        # Let the normal collection open report the invalid model setting.
+        return False, n_results
+    if model == "nemotron-vllm" or (
+        model == "openai-compat" and cfg.embedding_api_model == _NEMOTRON_VLLM_ALIAS
+    ):
+        return True, max(0, min(n_results, _NEMOTRON_SEARCH_LIMIT))
+    return False, n_results
+
+
 def _aligned_query_ids(results, document_count: int) -> list:
     """Return query IDs padded to match the document result column.
 
