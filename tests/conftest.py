@@ -46,6 +46,7 @@ _REAL_EMBEDDING_TEST_MODULES = {
     "test_embeddinggemma2_device",
     "test_embeddinggemma2_integration",
     "test_embedding_model_fallback",
+    "test_nemotron_vllm",
 }
 
 
@@ -123,6 +124,9 @@ def _stable_embedding_function_for_tests(request, monkeypatch):
     writes/search without loading native ONNX sessions.
     """
     module_name = getattr(getattr(request, "module", None), "__name__", "")
+    if module_name != "test_nemotron_vllm":
+        # The inherited fixtures and legacy palaces use MiniLM's 384-vector space.
+        monkeypatch.setattr("mempalace.config.DEFAULT_EMBEDDING_MODEL", "minilm")
     if module_name in _REAL_EMBEDDING_TEST_MODULES:
         yield
         return

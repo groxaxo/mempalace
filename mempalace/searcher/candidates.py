@@ -382,6 +382,7 @@ def _finalize_candidate_hits(
     stop_words: frozenset = frozenset(),
     since_dt=None,
     before_dt=None,
+    vector_only: bool = False,
 ) -> tuple:
     try:
         _apply_candidate_strategy(
@@ -406,15 +407,17 @@ def _finalize_candidate_hits(
             ),
         )
 
-    vector_weight, bm25_weight = _resolve_hybrid_rank_weights()
-    ranked = _hybrid_rank(
-        hits,
-        query,
-        vector_weight=vector_weight,
-        bm25_weight=bm25_weight,
-        metric=_metric_for_collection(drawers_col),
-        stop_words=stop_words,
-    )
+    ranked = hits
+    if not vector_only:
+        vector_weight, bm25_weight = _resolve_hybrid_rank_weights()
+        ranked = _hybrid_rank(
+            hits,
+            query,
+            vector_weight=vector_weight,
+            bm25_weight=bm25_weight,
+            metric=_metric_for_collection(drawers_col),
+            stop_words=stop_words,
+        )
     hits = _fold_copies_across_sources(
         _dedupe_rendered_hits(ranked), _search_hit_source, _search_hit_ref
     )[:n_results]
@@ -506,6 +509,7 @@ def _window_and_fallback_gate(
     collection_name,
     source_file,
     stop_words: frozenset = frozenset(),
+    vector_only: bool = False,
 ):
     """Front gate for ``search_memories``: parse the window, route the fallback.
 
@@ -522,6 +526,15 @@ def _window_and_fallback_gate(
         return None, None, False, {"error": str(e)}
     active = since_dt is not None or before_dt is not None
     if vector_disabled:
+        if vector_only:
+            return (
+                since_dt,
+                before_dt,
+                active,
+                _search_error_result(
+                    "Nemotron search requires a working vector index. Run `mempalace repair`."
+                ),
+            )
         return (
             since_dt,
             before_dt,

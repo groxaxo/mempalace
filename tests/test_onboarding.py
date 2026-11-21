@@ -458,20 +458,20 @@ def test_run_onboarding_with_ambiguous_names(tmp_path):
 # ── _ask_embedding_model ──────────────────────────────────────────────
 
 
-def test_ask_embedding_model_defaults_to_multilingual():
-    """Default is multilingual: empty input (just Enter) accepts the default."""
+def test_ask_embedding_model_defaults_to_nemotron(monkeypatch):
+    monkeypatch.setattr("mempalace.config.DEFAULT_EMBEDDING_MODEL", "nemotron-vllm")
     with patch("builtins.input", return_value=""):
+        assert _ask_embedding_model() == "nemotron-vllm"
+
+
+def test_ask_embedding_model_explicit_embeddinggemma():
+    with patch("builtins.input", return_value="2"):
         assert _ask_embedding_model() == "embeddinggemma"
 
 
-def test_ask_embedding_model_explicit_yes():
-    with patch("builtins.input", return_value="y"):
-        assert _ask_embedding_model() == "embeddinggemma"
-
-
-def test_ask_embedding_model_explicit_no():
+def test_ask_embedding_model_explicit_minilm():
     """User opts down to English-only — choice is recorded as 'minilm'."""
-    with patch("builtins.input", return_value="n"):
+    with patch("builtins.input", return_value="3"):
         assert _ask_embedding_model() == "minilm"
 
 

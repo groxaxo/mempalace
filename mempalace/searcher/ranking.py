@@ -3,6 +3,21 @@ if __name__ != "mempalace.searcher":
     raise ImportError(f"{__name__} is an implementation fragment; import mempalace.searcher")
 
 
+def _nemotron_search_settings(n_results: int) -> tuple[bool, int]:
+    from ..embedding import _NEMOTRON_VLLM_ALIAS, UnknownEmbeddingModelError
+
+    cfg = MempalaceConfig()
+    try:
+        model = cfg.embedding_model
+    except UnknownEmbeddingModelError:
+        return False, n_results
+    if model == "nemotron-vllm" or (
+        model == "openai-compat" and cfg.embedding_api_model == _NEMOTRON_VLLM_ALIAS
+    ):
+        return True, max(0, min(n_results, 5))
+    return False, n_results
+
+
 def _first_or_empty(results, key: str) -> list:
     """Return the first inner list of a query result field, or [].
 

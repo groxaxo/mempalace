@@ -759,6 +759,11 @@ class EmbeddinggemmaONNX:
 # ``embedding_api_model`` / ``embedding_api_key`` (each env-overridable).
 _EF_API_BATCH = 64
 _EF_API_TIMEOUT = 120
+_NEMOTRON_VLLM_ALIAS = "nemotron-embed"
+_NEMOTRON_VLLM_ENDPOINT = "http://127.0.0.1:8000/v1/embeddings"
+_NEMOTRON_VLLM_MODEL = "groxaxo/Nemotron-3-Embed-1B-AWQ-W4A16"
+_NEMOTRON_VLLM_IDENTITY = f"{_NEMOTRON_VLLM_MODEL}@vllm-2048"
+_NEMOTRON_VLLM_DIMENSION = 2048
 
 
 class EmbeddingAPIError(RuntimeError):
@@ -914,7 +919,7 @@ class OpenAICompatEmbeddingFunction:
 
 
 _KNOWN_EMBEDDING_MODELS = frozenset(
-    {"minilm", "embeddinggemma", "embeddinggemma2", "openai-compat"}
+    {"minilm", "embeddinggemma", "embeddinggemma2", "openai-compat", "nemotron-vllm"}
 )
 # Families whose near misses refuse instead of falling back to MiniLM: each
 # entry is (prefix, suggested names). A name is a near miss of a family when it
@@ -924,6 +929,7 @@ _KNOWN_EMBEDDING_MODELS = frozenset(
 _GUARDED_MODEL_FAMILIES = (
     ("embeddinggemma", ("embeddinggemma", "embeddinggemma2")),
     ("openai", ("openai-compat",)),
+    ("nemotron", ("nemotron-vllm",)),
 )
 _NEAR_MISS_DISTANCE = 2
 
@@ -1194,10 +1200,13 @@ def _normalize_stored_model_name(name) -> str:
     ``server_embedder`` backend's names are its own and must not go through
     here.
     """
-    stored = str(name or "").strip().lower()
+    stored = str(name or "").strip()
+    if stored == _NEMOTRON_VLLM_IDENTITY:
+        return stored
+    stored = stored.lower()
     if stored.startswith("embeddinggemma2:"):
         return stored
-    if stored in _KNOWN_EMBEDDING_MODELS and stored != "embeddinggemma2":
+    if stored in _KNOWN_EMBEDDING_MODELS and stored not in ("embeddinggemma2", "nemotron-vllm"):
         return stored
     return "minilm"
 
@@ -1328,18 +1337,21 @@ def get_embedding_function(device: Optional[str] = None, model: Optional[str] = 
 
     # OpenAI-compatible embedding API: bypasses local ONNX entirely. Checked
     # before device→provider resolution since it needs no hardware accelerator.
-    if model == "openai-compat":
+    if model in ("openai-compat", "nemotron-vllm"):
         from .config import MempalaceConfig
 
         cfg = MempalaceConfig()
         url = cfg.embedding_api_url
+        api_model = cfg.embedding_api_model
+        if model == "nemotron-vllm":
+            url = url or _NEMOTRON_VLLM_ENDPOINT
+            api_model = api_model or _NEMOTRON_VLLM_ALIAS
         if not url:
             raise ValueError(
                 "embedding_model='openai-compat' requires an endpoint — set "
                 "embedding_api_url in ~/.mempalace/config.json or the "
                 "MEMPALACE_EMBEDDING_API_URL env var (e.g. http://host:port)"
             )
-        api_model = cfg.embedding_api_model
         if not api_model:
             raise ValueError(
                 "embedding_model='openai-compat' requires a model — set "
@@ -1350,17 +1362,20 @@ def get_embedding_function(device: Optional[str] = None, model: Optional[str] = 
         # Include a fingerprint of the key (never the raw secret) so a token
         # rotation busts the cache in long-lived processes (e.g. MCP server).
         key_fp = hashlib.sha256((api_key or "").encode("utf-8")).hexdigest()[:16]
-        cache_key = ("openai-compat", url, api_model, key_fp)
+        cache_key = (model, url, api_model, key_fp)
         cached = _EF_CACHE.get(cache_key)
         if cached is not None:
             return cached
         # Return the concrete function. Chroma accepts only ``__call__(self, input)``,
         # and callers distinguish backends by type. A proxy breaks both.
-        ef = OpenAICompatEmbeddingFunction(base_url=url, model=api_model, api_key=api_key)
+        if model == "nemotron-vllm" or api_model == _NEMOTRON_VLLM_ALIAS:
+            from .nemotron_vllm import NemotronVLLMEmbeddingFunction
+
+            ef = NemotronVLLMEmbeddingFunction(base_url=url, model=api_model, api_key=api_key)
+        else:
+            ef = OpenAICompatEmbeddingFunction(base_url=url, model=api_model, api_key=api_key)
         _EF_CACHE[cache_key] = ef
-        logger.info(
-            "Embedding function initialized (openai-compat url=%s model=%s)", url, api_model
-        )
+        logger.info("Embedding function initialized (%s url=%s model=%s)", model, url, api_model)
         return ef
 
     providers, effective = _resolve_providers(device, model)
@@ -1403,7 +1418,22 @@ def describe_device(device: Optional[str] = None, model: Optional[str] = None) -
     that embeddings are served by a remote endpoint rather than local hardware
     (in which case the ``embedding_device`` accelerator label is irrelevant).
     """
-    if current_model_name(model).startswith("embeddinggemma2:"):
+    from .config import MempalaceConfig
+
+    cfg = None
+    if model is None:
+        cfg = MempalaceConfig()
+        model = cfg.embedding_model
+    model = _resolve_embedding_model(model)
+    if model == "nemotron-vllm":
+        url = (cfg or MempalaceConfig()).embedding_api_url or _NEMOTRON_VLLM_ENDPOINT
+        return f"nemotron-vllm ({url})"
+    if model == "openai-compat":
+        url = (cfg or MempalaceConfig()).embedding_api_url
+        return f"openai-compat ({url})" if url else "openai-compat"
+    if device is None:
+        device = (cfg or MempalaceConfig()).embedding_device
+    if model == "embeddinggemma2":
         ef = get_embedding_function(device=device, model="embeddinggemma2")
         # An explicit device torch cannot use warns now, before the caller
         # prints the label, and the label says so.
@@ -1451,6 +1481,10 @@ def current_model_name(model: Optional[str] = None) -> str:
         name = _resolve_embedding_model(model)
     if name == "embeddinggemma2":
         return get_embedding_function(model=name).identity
+    if name == "nemotron-vllm" or (
+        name == "openai-compat" and MempalaceConfig().embedding_api_model == _NEMOTRON_VLLM_ALIAS
+    ):
+        return _NEMOTRON_VLLM_IDENTITY
     return name
 
 
@@ -1465,6 +1499,8 @@ def probe_dimension(device: Optional[str] = None, model: Optional[str] = None) -
     name = current_model_name(model)
     if name.startswith("embeddinggemma2:"):
         return get_embedding_function(device=device, model="embeddinggemma2").dimension
+    if name == _NEMOTRON_VLLM_IDENTITY:
+        return _NEMOTRON_VLLM_DIMENSION
     cached = _DIM_CACHE.get(name)
     if cached is not None:
         return cached

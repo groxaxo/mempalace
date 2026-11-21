@@ -86,28 +86,17 @@ def _yn(prompt, default="y"):
 
 
 def _ask_embedding_model() -> str:
-    """Return ``"embeddinggemma"`` (multilingual, default) or ``"minilm"``.
+    """Choose the embedding backend to persist for this palace."""
+    from .config import DEFAULT_EMBEDDING_MODEL
 
-    Defaulting to multilingual: the recall promise breaks for non-EN content
-    under the English-only MiniLM default — cross-lingual cosine similarity
-    collapses to roughly 0.35 (essentially random). Multilingual is the safe
-    default; English-only is offered as an opt-down for users on slow links
-    or who really only ever store English content.
-    """
-    _header("Language support")
+    _header("Embedding model")
     print("""
-  MemPalace embeds your memories into a vector space so the AI can find
-  related content later. The default model supports 100+ languages,
-  including non-Latin scripts (CJK, Cyrillic, Arabic, Devanagari).
-
-    Multilingual: ~300 MB one-time download, works across all languages.
-    English-only: ~30 MB, smaller and faster, but cross-lingual recall
-                  is poor (a Russian memory and its English translation
-                  won't match each other).
+    [1] Nemotron via local vLLM (requires a running embedding server)
+    [2] EmbeddingGemma (multilingual, ~300 MB download)
+    [3] MiniLM (English, ~30 MB download)
 """)
-    if _yn("  Use the multilingual embedding model?", default="y"):
-        return "embeddinggemma"
-    return "minilm"
+    choice = _ask("Choose an embedding model", default="1")
+    return {"2": "embeddinggemma", "3": "minilm"}.get(choice, DEFAULT_EMBEDDING_MODEL)
 
 
 def _ask_mode() -> str:
@@ -500,10 +489,10 @@ def quick_setup(
     Used in tests and benchmark scripts.
 
     people: list of dicts {"name": str, "relationship": str, "context": str}
-    embedding_model: optional ``"minilm"`` or ``"embeddinggemma"``. When set,
+    embedding_model: optional embedding backend. When set,
         writes the choice to ``config.json`` so subsequent runs pick the
         right EF. When omitted, the config stays untouched and the hard
-        default (``"minilm"``) governs.
+        default (``"nemotron-vllm"``) governs.
     """
     registry = EntityRegistry.load(config_dir)
     registry.seed(
